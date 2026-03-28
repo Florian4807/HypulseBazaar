@@ -8,8 +8,9 @@
 ## Phases
 
 - [x] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API (completed 2026-03-28)
+- [ ] **Phase 1 (Rev):** Revision in progress - align with Coflnet polling + rich data model
 - [x] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities (completed 2026-03-28)
-- [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI
+- [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI (BLOCKED - waiting for Phase 1 revision)
 
 ---
 
@@ -18,6 +19,11 @@
 ### Phase 1: Setup & Core Data
 
 **Goal:** Service can fetch, parse, and store bazaar data from Hypixel API on a configurable schedule
+
+**Revision Note (2026-03-28):** Phase needs revision to align with Coflnet reference:
+- Implement poll-until-LastUpdated-advances (not fixed cron)
+- Add rich order summary storage (BuyOrders/SellOrders)
+- Add optional API key support
 
 **Depends on:** Nothing (first phase)
 
@@ -73,7 +79,9 @@
 3. Frontend displays top flip recommendations with profit calculations
 4. User can filter/search items by name
 
-**Plans:** TBD
+**Plans:** 1/1 plans
+- [x] 03-01-PLAN.md — React frontend with dashboard, items list, price charts, flips panel
+
 **UI hint:** yes
 
 ---
@@ -84,7 +92,7 @@
 |-------|----------------|--------|-----------|
 | 1. Setup & Core Data | 1/1 | Complete    | 2026-03-28 |
 | 2. API & Flip Analysis | 2/2 | Complete    | 2026-03-28 |
-| 3. Frontend | 0/1 | Not started | - |
+| 3. Frontend | 1/1 | Planned | - |
 
 ---
 
