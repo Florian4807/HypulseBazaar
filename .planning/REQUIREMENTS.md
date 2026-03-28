@@ -60,25 +60,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
-| CORE-04 | Phase 1 | Pending |
-| CORE-05 | Phase 1 | Pending |
-| STOR-01 | Phase 1 | Pending |
-| STOR-02 | Phase 1 | Pending |
-| STOR-03 | Phase 1 | Pending |
-| STOR-04 | Phase 1 | Pending |
-| API-01 | Phase 2 | Pending |
-| API-02 | Phase 2 | Pending |
-| API-03 | Phase 2 | Pending |
-| FLIP-01 | Phase 2 | Pending |
-| FLIP-02 | Phase 2 | Pending |
-| FLIP-03 | Phase 2 | Pending |
-| FRNT-01 | Phase 3 | Pending |
-| FRNT-02 | Phase 3 | Pending |
-| FRNT-03 | Phase 3 | Pending |
-| FRNT-04 | Phase 3 | Pending |
+| CORE-01 | Phase 1: Setup & Core Data | Pending |
+| CORE-02 | Phase 1: Setup & Core Data | Pending |
+| CORE-03 | Phase 1: Setup & Core Data | Pending |
+| CORE-04 | Phase 1: Setup & Core Data | Pending |
+| CORE-05 | Phase 1: Setup & Core Data | Pending |
+| STOR-01 | Phase 1: Setup & Core Data | Pending |
+| STOR-02 | Phase 1: Setup & Core Data | Pending |
+| STOR-03 | Phase 1: Setup & Core Data | Pending |
+| STOR-04 | Phase 1: Setup & Core Data | Pending |
+| API-01 | Phase 2: API & Flip Analysis | Pending |
+| API-02 | Phase 2: API & Flip Analysis | Pending |
+| API-03 | Phase 2: API & Flip Analysis | Pending |
+| FLIP-01 | Phase 2: API & Flip Analysis | Pending |
+| FLIP-02 | Phase 2: API & Flip Analysis | Pending |
+| FLIP-03 | Phase 2: API & Flip Analysis | Pending |
+| FRNT-01 | Phase 3: Frontend | Pending |
+| FRNT-02 | Phase 3: Frontend | Pending |
+| FRNT-03 | Phase 3: Frontend | Pending |
+| FRNT-04 | Phase 3: Frontend | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
