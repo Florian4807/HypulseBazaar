@@ -22,9 +22,9 @@
 
 ### API Endpoints
 
-- [ ] **API-01**: GET endpoint returns current bazaar prices
-- [ ] **API-02**: GET endpoint returns historical prices for specific item
-- [ ] **API-03**: GET endpoint returns price history over time range
+- [x] **API-01**: GET endpoint returns current bazaar prices
+- [x] **API-02**: GET endpoint returns historical prices for specific item
+- [x] **API-03**: GET endpoint returns price history over time range
 
 ### Flip Detection
 
@@ -69,9 +69,9 @@
 | STOR-02 | Phase 1: Setup & Core Data | Complete |
 | STOR-03 | Phase 1: Setup & Core Data | Complete |
 | STOR-04 | Phase 1: Setup & Core Data | Complete |
-| API-01 | Phase 2: API & Flip Analysis | Pending |
-| API-02 | Phase 2: API & Flip Analysis | Pending |
-| API-03 | Phase 2: API & Flip Analysis | Pending |
+| API-01 | Phase 2: API & Flip Analysis | Complete |
+| API-02 | Phase 2: API & Flip Analysis | Complete |
+| API-03 | Phase 2: API & Flip Analysis | Complete |
 | FLIP-01 | Phase 2: API & Flip Analysis | Pending |
 | FLIP-02 | Phase 2: API & Flip Analysis | Pending |
 | FLIP-03 | Phase 2: API & Flip Analysis | Pending |
