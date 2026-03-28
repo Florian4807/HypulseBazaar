@@ -7,7 +7,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API
+- [x] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API (completed 2026-03-28)
 - [ ] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities
 - [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI
 
@@ -34,8 +34,8 @@
 7. Price history includes buy price, sell price, and moving average
 8. Data retention is configurable (can set number of days to keep)
 
-**Plans:** 1 plan
-- [ ] 01-01-PLAN.md — Core data pipeline: fetch, parse, store bazaar data
+**Plans:** 1/1 plans complete
+- [x] 01-01-PLAN.md — Core data pipeline: fetch, parse, store bazaar data
 
 ### Phase 2: API & Flip Analysis
 
@@ -80,7 +80,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup & Core Data | 1/1 | Planned | - |
+| 1. Setup & Core Data | 1/1 | Complete   | 2026-03-28 |
 | 2. API & Flip Analysis | 0/1 | Not started | - |
 | 3. Frontend | 0/1 | Not started | - |
 

@@ -7,18 +7,18 @@
 
 ### Core Data Processing
 
-- [ ] **CORE-01**: Service can fetch bazaar data from Hypixel API
-- [ ] **CORE-02**: Service parses bazaar product data (item name, buy/sell price, quantity)
-- [ ] **CORE-03**: Service stores bazaar snapshots in database with timestamp
-- [ ] **CORE-04**: Service runs on configurable schedule (cron-like)
-- [ ] **CORE-05**: Service handles API rate limits gracefully
+- [x] **CORE-01**: Service can fetch bazaar data from Hypixel API
+- [x] **CORE-02**: Service parses bazaar product data (item name, buy/sell price, quantity)
+- [x] **CORE-03**: Service stores bazaar snapshots in database with timestamp
+- [x] **CORE-04**: Service runs on configurable schedule (cron-like)
+- [x] **CORE-05**: Service handles API rate limits gracefully
 
 ### Data Storage
 
-- [ ] **STOR-01**: Database schema stores item prices over time
-- [ ] **STOR-02**: Historical price data is queryable by item
-- [ ] **STOR-03**: Price history includes buy price, sell price, moving average
-- [ ] **STOR-04**: Data retention configurable (keep N days)
+- [x] **STOR-01**: Database schema stores item prices over time
+- [x] **STOR-02**: Historical price data is queryable by item
+- [x] **STOR-03**: Price history includes buy price, sell price, moving average
+- [x] **STOR-04**: Data retention configurable (keep N days)
 
 ### API Endpoints
 
@@ -60,15 +60,15 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1: Setup & Core Data | Pending |
-| CORE-02 | Phase 1: Setup & Core Data | Pending |
-| CORE-03 | Phase 1: Setup & Core Data | Pending |
-| CORE-04 | Phase 1: Setup & Core Data | Pending |
-| CORE-05 | Phase 1: Setup & Core Data | Pending |
-| STOR-01 | Phase 1: Setup & Core Data | Pending |
-| STOR-02 | Phase 1: Setup & Core Data | Pending |
-| STOR-03 | Phase 1: Setup & Core Data | Pending |
-| STOR-04 | Phase 1: Setup & Core Data | Pending |
+| CORE-01 | Phase 1: Setup & Core Data | Complete |
+| CORE-02 | Phase 1: Setup & Core Data | Complete |
+| CORE-03 | Phase 1: Setup & Core Data | Complete |
+| CORE-04 | Phase 1: Setup & Core Data | Complete |
+| CORE-05 | Phase 1: Setup & Core Data | Complete |
+| STOR-01 | Phase 1: Setup & Core Data | Complete |
+| STOR-02 | Phase 1: Setup & Core Data | Complete |
+| STOR-03 | Phase 1: Setup & Core Data | Complete |
+| STOR-04 | Phase 1: Setup & Core Data | Complete |
 | API-01 | Phase 2: API & Flip Analysis | Pending |
 | API-02 | Phase 2: API & Flip Analysis | Pending |
 | API-03 | Phase 2: API & Flip Analysis | Pending |
