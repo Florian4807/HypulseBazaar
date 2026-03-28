@@ -27,13 +27,14 @@ public class PriceSnapshot
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Current buy price (instant buy orders).
+    /// Hypixel <c>buyPrice</c>: coins to buy one unit now (instant buy; in-game “sell offer” column).
+    /// Do not swap with <see cref="SellPrice"/> — names are player-action, not order-book column titles.
     /// </summary>
     [Column(TypeName = "decimal(18,4)")]
     public decimal BuyPrice { get; set; }
 
     /// <summary>
-    /// Current sell price (instant sell orders).
+    /// Hypixel <c>sellPrice</c>: coins when selling one unit now (instant sell; in-game “buy order” column).
     /// </summary>
     [Column(TypeName = "decimal(18,4)")]
     public decimal SellPrice { get; set; }
@@ -81,6 +82,11 @@ public class PriceSnapshot
     [Column(TypeName = "blob")]
     [JsonIgnore]
     public byte[]? SerializedSellOrders { get; set; }
+
+    /// <summary>
+    /// True for rows ingested from external history APIs (e.g. Coflnet). Excluded from rolling retention so imports are not deleted.
+    /// </summary>
+    public bool IsExternalImport { get; set; }
 
     /// <summary>
     /// Deserialized buy orders (top N entries).

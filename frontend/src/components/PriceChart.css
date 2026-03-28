@@ -1,56 +1,205 @@
 .price-chart-container {
-  background-color: #1a1a2e;
-  border-radius: 12px;
-  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-panel);
   height: fit-content;
 }
 
-.chart-header {
+.price-chart-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.price-chart-title-block {
+  min-width: 0;
+}
+
+.price-chart-product {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.price-chart-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.price-chart-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .price-chart-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.stat-value.buy {
+  color: var(--buy);
+}
+
+.stat-value.sell {
+  color: var(--sell);
+}
+
+.stat-value.spread {
+  color: var(--accent);
+}
+
+.chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
+.chart-toolbar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .time-range-selector {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  gap: 2px;
 }
 
 .time-range-btn {
-  padding: 6px 12px;
-  background-color: #0f0f1a;
-  border: 1px solid #2d2d4a;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
   border-radius: 6px;
-  color: #888;
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
 }
 
 .time-range-btn:hover {
-  border-color: #6c5ce7;
-  color: #e0e0e0;
+  color: var(--text);
+  background: var(--surface-hover);
 }
 
 .time-range-btn.active {
-  background-color: #6c5ce7;
-  border-color: #6c5ce7;
-  color: white;
+  background: var(--accent-muted);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(229, 184, 74, 0.25);
 }
 
 .chart-wrapper {
-  height: 400px;
+  height: min(420px, 55vh);
+  min-height: 280px;
 }
 
-.empty-state,
-.loading,
-.error {
+.chart-range-footnote {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.chart-backfill-hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-style: italic;
+  opacity: 0.92;
+}
+
+.chart-data-hint {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+
+.price-chart-container .chart-empty,
+.price-chart-container .chart-error,
+.price-chart-container .chart-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 300px;
-  color: #666;
-  font-size: 16px;
+  min-height: 280px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 15px;
+  text-align: center;
 }
 
-.error {
-  color: #ff7675;
+.price-chart-container .chart-error {
+  color: var(--buy);
+}
+
+.price-chart-container .chart-loading {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.price-chart-container .chart-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

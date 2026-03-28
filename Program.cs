@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using SkyBazaar.Data;
 using SkyBazaar.Services;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // Configure DbContext with SQLite
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -23,6 +22,17 @@ builder.Services.AddDbContextFactory<SkyBazaarDbContext>(options =>
 // Register the Hypixel API service with HttpClient factory
 builder.Services.AddHttpClient<IHypixelApiService, HypixelApiService>();
 
+// Coflnet public API (bazaar history import)
+builder.Services.AddHttpClient("Coflnet", (sp, client) =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var baseUrl = cfg["Coflnet:ApiBaseUrl"]?.Trim().TrimEnd('/') ?? "https://sky.coflnet.com/api";
+    client.BaseAddress = new Uri(baseUrl + "/");
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
+
+builder.Services.AddScoped<ICoflnetHistoryImportService, CoflnetHistoryImportService>();
+
 // Register the background fetcher service
 builder.Services.AddHostedService<BazaarFetcherService>();
 
@@ -34,8 +44,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
 }
 
 app.UseAuthorization();
@@ -47,6 +56,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SkyBazaarDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.EnsurePriceSnapshotExternalImportColumnAsync();
 }
 
 app.Run();

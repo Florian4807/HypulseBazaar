@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SkyBazaar.Data;
 using SkyBazaar.Models;
+using SkyBazaar.Services;
 
 namespace SkyBazaar.Controllers;
 
@@ -13,10 +15,17 @@ namespace SkyBazaar.Controllers;
 public class BazaarController : ControllerBase
 {
     private readonly SkyBazaarDbContext _context;
+    private readonly ICoflnetHistoryImportService _coflnetHistoryImport;
+    private readonly IConfiguration _configuration;
 
-    public BazaarController(SkyBazaarDbContext context)
+    public BazaarController(
+        SkyBazaarDbContext context,
+        ICoflnetHistoryImportService coflnetHistoryImport,
+        IConfiguration configuration)
     {
         _context = context;
+        _coflnetHistoryImport = coflnetHistoryImport;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -62,8 +71,8 @@ public class BazaarController : ControllerBase
 
         var snapshots = await _context.Snapshots
             .Where(s => s.BazaarItemId == item.Id)
-            .OrderByDescending(s => s.Timestamp)
-            .Take(limit)
+            .OrderBy(s => s.Timestamp)
+            .TakeLast(limit)
             .ToListAsync();
 
         var result = new PriceHistoryDto
@@ -84,7 +93,9 @@ public class BazaarController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/bazaar/{productId}/history - Returns price history within time range.
+    /// GET /api/bazaar/{productId}/history — price history with optional filters.
+    /// If <paramref name="limit"/> is set, returns at most that many newest points (after start/end filters).
+    /// If <paramref name="limit"/> is omitted, returns up to <c>Bazaar:MaxHistoryPoints</c> (default 500000) newest points.
     /// </summary>
     [HttpGet("{productId}/history")]
     public async Task<ActionResult<PriceHistoryDto>> GetItemHistoryByDateRange(
@@ -115,11 +126,21 @@ public class BazaarController : ControllerBase
             query = query.Where(s => s.Timestamp <= end.Value);
         }
 
-        // Apply ordering and limit
-        var snapshots = await query
-            .OrderByDescending(s => s.Timestamp)
-            .Take(limit ?? 1000)
-            .ToListAsync();
+        // Newest-first, optional cap, then chronological for charts (time increases left → right).
+        // When limit is omitted, return full matching range (use Bazaar:MaxHistoryPoints as safety ceiling).
+        var ordered = query.OrderByDescending(s => s.Timestamp);
+        List<PriceSnapshot> snapshots;
+        if (limit.HasValue)
+        {
+            snapshots = await ordered.Take(limit.Value).ToListAsync();
+        }
+        else
+        {
+            var maxPoints = _configuration.GetValue("Bazaar:MaxHistoryPoints", 500_000);
+            snapshots = await ordered.Take(maxPoints).ToListAsync();
+        }
+
+        snapshots.Reverse();
 
         var result = new PriceHistoryDto
         {
@@ -136,5 +157,32 @@ public class BazaarController : ControllerBase
         };
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// POST /api/bazaar/{productId}/import-coflnet-history — fetch Coflnet graph history and insert missing snapshots.
+    /// Optional start/end (UTC) query params limit the range. Disable with Coflnet:EnableImport=false.
+    /// </summary>
+    [HttpPost("{productId}/import-coflnet-history")]
+    public async Task<ActionResult<CoflnetHistoryImportResultDto>> ImportCoflnetHistory(
+        string productId,
+        [FromQuery] DateTime? start,
+        [FromQuery] DateTime? end,
+        CancellationToken cancellationToken)
+    {
+        if (!_configuration.GetValue("Coflnet:EnableImport", true))
+        {
+            return StatusCode(403, new { message = "Coflnet import is disabled (Coflnet:EnableImport)." });
+        }
+
+        try
+        {
+            var result = await _coflnetHistoryImport.ImportAsync(productId, start, end, cancellationToken);
+            return Ok(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return BadRequest(new { message = "Coflnet request failed", detail = ex.Message });
+        }
     }
 }

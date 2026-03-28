@@ -33,6 +33,12 @@ public class SkyBazaarDbContext : DbContext
             entity.HasIndex(e => e.ProductId).IsUnique();
             entity.Property(e => e.ProductId).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.CreatedAt).HasConversion(
+                v => v,
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            entity.Property(e => e.UpdatedAt).HasConversion(
+                v => v,
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         });
 
         // Configure PriceSnapshot
@@ -44,6 +50,10 @@ public class SkyBazaarDbContext : DbContext
                 .WithMany(b => b.Snapshots)
                 .HasForeignKey(e => e.BazaarItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // SQLite returns DateTimeKind.Unspecified; Hypixel times are UTC so JSON can emit ...Z
+            entity.Property(e => e.Timestamp).HasConversion(
+                v => v,
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         });
     }
 }

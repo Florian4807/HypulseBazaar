@@ -5,7 +5,7 @@ using SkyBazaar.Services;
 namespace SkyBazaar.Controllers;
 
 /// <summary>
-/// Controller for flip detection API endpoints.
+/// API for bid–ask spread rankings (Hypixel instant buy minus instant sell).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -19,11 +19,11 @@ public class FlipsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/flips - Returns top flip opportunities sorted by profit potential.
+    /// GET /api/flips — top items by spread score (instant buy − instant sell).
     /// </summary>
-    /// <param name="count">Maximum number of flips to return (default 50).</param>
-    /// <param name="minProfitPercent">Minimum profit percentage to include (default 1.0).</param>
-    /// <returns>List of flip recommendations sorted by recommendation score.</returns>
+    /// <param name="count">Maximum number of rows to return (default 50).</param>
+    /// <param name="minProfitPercent">Minimum spread percentage vs instant sell (default 1.0).</param>
+    /// <returns>Spread rankings sorted by recommendation score.</returns>
     [HttpGet]
     public async Task<ActionResult<FlipsResponseDto>> GetTopFlips(
         [FromQuery] int count = 50,
@@ -42,10 +42,10 @@ public class FlipsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/flips/{productId} - Returns flip recommendation for a specific item.
+    /// GET /api/flips/{productId} — latest spread metrics for one product.
     /// </summary>
-    /// <param name="productId">The product identifier (e.g., "ENCHANTED_COAL").</param>
-    /// <returns>Flip recommendation for the specified product.</returns>
+    /// <param name="productId">Product id (e.g. ENCHANTED_COAL).</param>
+    /// <returns>Spread data or 404 if missing or no valid bid–ask book.</returns>
     [HttpGet("{productId}")]
     public async Task<ActionResult<FlipRecommendationDto>> GetFlipForItem(string productId)
     {
@@ -53,7 +53,7 @@ public class FlipsController : ControllerBase
 
         if (flip == null)
         {
-            return NotFound(new { message = $"Product '{productId}' not found or no valid flip data" });
+            return NotFound(new { message = $"Product '{productId}' not found or no valid spread data (instant buy must exceed instant sell)" });
         }
 
         return Ok(flip);

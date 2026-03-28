@@ -11,12 +11,12 @@ public class PriceSnapshotDto
     public DateTime Timestamp { get; set; }
 
     /// <summary>
-    /// Buy price at this snapshot.
+    /// Instant buy (Hypixel <c>buyPrice</c>).
     /// </summary>
     public decimal BuyPrice { get; set; }
 
     /// <summary>
-    /// Sell price at this snapshot.
+    /// Instant sell (Hypixel <c>sellPrice</c>).
     /// </summary>
     public decimal SellPrice { get; set; }
 

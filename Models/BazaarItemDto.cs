@@ -16,12 +16,12 @@ public class BazaarItemDto
     public string? Name { get; set; }
 
     /// <summary>
-    /// Current buy price (instant buy orders).
+    /// Hypixel instant buy price (pay sell offers / ask).
     /// </summary>
     public decimal CurrentBuyPrice { get; set; }
 
     /// <summary>
-    /// Current sell price (instant sell orders).
+    /// Hypixel instant sell price (hit buy orders / bid).
     /// </summary>
     public decimal CurrentSellPrice { get; set; }
 

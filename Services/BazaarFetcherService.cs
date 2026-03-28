@@ -22,7 +22,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     private Timer? _timer;
     private bool _isFetching;
     
-    private int _minDelayAfterSnapshotSeconds;
+    private readonly TimeSpan _minDelayAfterSnapshot;
     private int _retentionDays;
     private int _pollWaitMs;
     private int _maxPollRetries;
@@ -38,8 +38,9 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         _configuration = configuration;
         _logger = logger;
         
-        // Load configuration
-        _minDelayAfterSnapshotSeconds = _configuration.GetValue<int>("Bazaar:MinDelayAfterSnapshotSeconds", 9);
+        // Load configuration (seconds may be fractional — matches Coflnet ~9.5s between polls)
+        var delaySeconds = _configuration.GetValue<double>("Bazaar:MinDelayAfterSnapshotSeconds", 9.5);
+        _minDelayAfterSnapshot = TimeSpan.FromSeconds(delaySeconds);
         _retentionDays = _configuration.GetValue<int>("Bazaar:RetentionDays", 30);
         _pollWaitMs = _configuration.GetValue<int>("Bazaar:PollWaitMs", 500);
         _maxPollRetries = _configuration.GetValue<int>("Bazaar:MaxPollRetries", 100);
@@ -50,18 +51,17 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     {
         _logger.LogInformation(
             "BazaarFetcherService starting. Min delay after snapshot: {Delay}s, Retention: {Days} days, Poll wait: {PollWait}ms, Max retries: {MaxRetries}",
-            _minDelayAfterSnapshotSeconds, _retentionDays, _pollWaitMs, _maxPollRetries);
+            _minDelayAfterSnapshot.TotalSeconds, _retentionDays, _pollWaitMs, _maxPollRetries);
 
         // Run initial fetch on startup
         _ = ExecuteFetchAsync(cancellationToken);
 
-        // Start the timer as short "wake up" trigger for cancellation check (~10s)
-        // The main throttle is now the delay after successful store, not the timer interval
+        // Short periodic wake (same cadence as post-save delay) so we retry if a fetch was skipped while busy
         _timer = new Timer(
             async _ => await ExecuteFetchAsync(cancellationToken),
             null,
-            TimeSpan.FromSeconds(_minDelayAfterSnapshotSeconds),
-            TimeSpan.FromSeconds(_minDelayAfterSnapshotSeconds));
+            _minDelayAfterSnapshot,
+            _minDelayAfterSnapshot);
 
         return Task.CompletedTask;
     }
@@ -186,9 +186,8 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                 "Bazaar data fetch completed. Items: {Total}, New items: {New}",
                 snapshots.Count, itemsCreated);
 
-            // Delay after successful store before next poll (mirrors Coflnet's 9.5s delay)
-            // This is the main throttle instead of fixed timer interval
-            await Task.Delay(TimeSpan.FromSeconds(_minDelayAfterSnapshotSeconds), cancellationToken);
+            // Delay after successful store before next poll (mirrors Coflnet's ~9.5s delay)
+            await Task.Delay(_minDelayAfterSnapshot, cancellationToken);
 
             // Clean up old data
             await CleanupOldDataAsync(cancellationToken);
@@ -257,7 +256,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     }
 
     /// <summary>
-    /// Removes price snapshots older than the retention period.
+    /// Removes Hypixel snapshots older than the retention period. Rows with <see cref="PriceSnapshot.IsExternalImport"/> are kept (e.g. Coflnet imports).
     /// </summary>
     private async Task CleanupOldDataAsync(CancellationToken cancellationToken)
     {
@@ -266,7 +265,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         var cutoffDate = DateTime.UtcNow.AddDays(-_retentionDays);
         
         var oldSnapshots = await dbContext.Snapshots
-            .Where(s => s.Timestamp < cutoffDate)
+            .Where(s => !s.IsExternalImport && s.Timestamp < cutoffDate)
             .ToListAsync(cancellationToken);
 
         if (oldSnapshots.Count > 0)

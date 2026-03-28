@@ -79,21 +79,24 @@ function TopFlips({ onFlipSelect }: TopFlipsProps) {
     <div className="top-flips-container">
       <div className="flips-header">
         <div className="flips-title-section">
-          <h2>Top Flips</h2>
+          <h2>Top spreads</h2>
+          <p className="flips-subtitle">
+            Ranked by bid–ask spread (instant buy − instant sell), not same-tick profit.
+          </p>
           {lastUpdated && (
             <span className="last-updated">
               Updated: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
         </div>
-        <button className="refresh-btn" onClick={fetchFlips} disabled={loading}>
-          {loading ? 'Refreshing...' : 'Refresh'}
+        <button type="button" className="refresh-btn" onClick={fetchFlips} disabled={loading}>
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
       <div className="flips-list">
         {sortedFlips.length === 0 ? (
-          <div className="empty-state">No flip opportunities found</div>
+          <div className="empty-state">No items meet the minimum spread percentage</div>
         ) : (
           sortedFlips.map((flip, index) => (
             <div
@@ -105,18 +108,18 @@ function TopFlips({ onFlipSelect }: TopFlipsProps) {
               <div className="flip-details">
                 <div className="flip-name">{flip.productName}</div>
                 <div className="flip-prices">
-                  <span className="price-label">Buy:</span>
+                  <span className="price-label">Instant buy:</span>
                   <span className="buy-price">{formatPrice(flip.buyPrice)}</span>
-                  <span className="arrow">→</span>
-                  <span className="price-label">Sell:</span>
+                  <span className="arrow">·</span>
+                  <span className="price-label">Instant sell:</span>
                   <span className="sell-price">{formatPrice(flip.sellPrice)}</span>
                 </div>
                 <div className="flip-profit">
                   <span className="profit-margin">
-                    {formatProfit(flip.profitMargin)} coins
+                    Spread {formatProfit(flip.profitMargin)} coins
                   </span>
                   <span className="profit-percent">
-                    {formatProfitPercent(flip.profitPercentage)}
+                    {formatProfitPercent(flip.profitPercentage)} vs instant sell
                   </span>
                 </div>
               </div>

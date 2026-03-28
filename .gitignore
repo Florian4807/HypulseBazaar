@@ -1,0 +1,29 @@
+# Build
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Local data & logs
+*.db
+*.db-shm
+*.db-wal
+coflnet-import-log.jsonl
+
+# Temp / vendored scratch trees
+temp-*/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE / OS
+.vs/
+.idea/
+*.user
+.DS_Store

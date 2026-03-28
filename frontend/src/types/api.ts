@@ -1,3 +1,4 @@
+/** currentBuyPrice = Hypixel instant buy; currentSellPrice = Hypixel instant sell */
 export interface BazaarItem {
   productId: string;
   name: string;
@@ -8,6 +9,7 @@ export interface BazaarItem {
   lastUpdated: string;
 }
 
+/** buyPrice / sellPrice = Hypixel quick_status (instant buy / instant sell) */
 export interface PriceSnapshot {
   timestamp: string;
   buyPrice: number;
@@ -22,6 +24,7 @@ export interface PriceHistory {
   snapshots: PriceSnapshot[];
 }
 
+/** profitMargin = bid–ask spread; profitPercentage = spread / instant sell × 100 */
 export interface FlipRecommendation {
   productId: string;
   productName: string;

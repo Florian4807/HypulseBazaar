@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace SkyBazaar.Models;
 
 /// <summary>
-/// DTO for flip recommendations - items with profitable buy/sell spreads.
+/// DTO for spread-ranked bazaar items. Property names follow the API; see <see cref="BuyPrice"/> for Hypixel semantics.
 /// </summary>
 public class FlipRecommendationDto
 {
@@ -18,22 +18,22 @@ public class FlipRecommendationDto
     public string? ProductName { get; set; }
 
     /// <summary>
-    /// Current buy price (instant buy orders).
+    /// Hypixel quick_status.buyPrice: coins to instant buy one unit (in-game sell offers / ask).
     /// </summary>
     public decimal BuyPrice { get; set; }
 
     /// <summary>
-    /// Current sell price (instant sell orders).
+    /// Hypixel quick_status.sellPrice: coins from instant sell of one unit (in-game buy orders / bid).
     /// </summary>
     public decimal SellPrice { get; set; }
 
     /// <summary>
-    /// Profit margin (SellPrice - BuyPrice).
+    /// Bid–ask spread in coins: <see cref="BuyPrice"/> − <see cref="SellPrice"/> (instant buy minus instant sell).
     /// </summary>
     public decimal ProfitMargin { get; set; }
 
     /// <summary>
-    /// Profit percentage: ((SellPrice - BuyPrice) / BuyPrice) * 100.
+    /// Spread as a percentage of <see cref="SellPrice"/>: (spread / SellPrice) × 100.
     /// </summary>
     public decimal ProfitPercentage { get; set; }
 
@@ -43,8 +43,7 @@ public class FlipRecommendationDto
     public long VolumeScore { get; set; }
 
     /// <summary>
-    /// Weighted recommendation score combining profit and volume.
-    /// Formula: ProfitMargin * Math.Log10(BuyVolume + SellVolume + 1)
+    /// Weighted score: <see cref="ProfitMargin"/> × log10(volume + 1).
     /// </summary>
     public decimal RecommendationScore { get; set; }
 

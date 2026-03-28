@@ -30,12 +30,14 @@ public class BazaarApiResult
 }
 
 /// <summary>
-/// Represents a single product's bazaar data.
+/// Single-product bazaar data aligned with Hypixel <c>quick_status</c> (instant buy / instant sell).
 /// </summary>
 public class BazaarItemSnapshot
 {
     public string ProductId { get; set; } = string.Empty;
+    /// <summary>Hypixel instant buy (matches in-game sell offers).</summary>
     public decimal BuyPrice { get; set; }
+    /// <summary>Hypixel instant sell (matches in-game buy orders).</summary>
     public decimal SellPrice { get; set; }
     public long BuyVolume { get; set; }
     public long SellVolume { get; set; }

@@ -54,7 +54,7 @@ function ItemsList({ onItemSelect }: ItemsListProps) {
     const term = searchTerm.toLowerCase();
     return items.filter(
       (item) =>
-        item.name.toLowerCase().includes(term) ||
+        (item.name ?? '').toLowerCase().includes(term) ||
         item.productId.toLowerCase().includes(term)
     );
   }, [items, searchTerm]);
@@ -78,23 +78,34 @@ function ItemsList({ onItemSelect }: ItemsListProps) {
   return (
     <div className="items-list-container">
       <div className="items-header">
-        <h2>Bazaar Items</h2>
-        <span className="items-count">{items.length} items</span>
+        <h2>Bazaar items</h2>
+        <span className="items-count">{items.length} tracked</span>
       </div>
-      <input
-        type="text"
-        className="search-input"
-        placeholder="Search items by name..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      <div className="search-wrap">
+        <input
+          type="search"
+          className="search-input"
+          placeholder="Search by name or product id…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
+      <p className="items-hint" title="Hypixel API: instant buy = pay sell offers (ask); instant sell = hit buy orders (bid).">
+        Prices are instant buy / instant sell (same as Hypixel), not the order-book column titles in-game.
+      </p>
       <div className="items-table-wrapper">
         <table className="items-table">
           <thead>
             <tr>
               <th>Item</th>
-              <th>Buy</th>
-              <th>Sell</th>
+              <th>
+                <abbr title="Coins to buy one now (matches in-game sell offers)">Instant buy</abbr>
+              </th>
+              <th>
+                <abbr title="Coins you get selling one now (matches in-game buy orders)">Instant sell</abbr>
+              </th>
               <th>Volume</th>
             </tr>
           </thead>
@@ -113,8 +124,8 @@ function ItemsList({ onItemSelect }: ItemsListProps) {
                   className="item-row"
                 >
                   <td className="item-name">{item.name}</td>
-                  <td className="item-price">{formatPrice(item.currentBuyPrice)}</td>
-                  <td className="item-price">{formatPrice(item.currentSellPrice)}</td>
+                  <td className="item-price item-buy">{formatPrice(item.currentBuyPrice)}</td>
+                  <td className="item-price item-sell">{formatPrice(item.currentSellPrice)}</td>
                   <td className="item-volume">{formatVolume(item.buyVolume)}</td>
                 </tr>
               ))

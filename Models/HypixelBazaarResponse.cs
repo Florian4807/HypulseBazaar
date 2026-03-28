@@ -54,13 +54,14 @@ public class OrderSummary
 }
 
 /// <summary>
-/// Quick status with instant order information.
+/// Hypixel <c>quick_status</c>: instant buy / instant sell (player-action names, not order-book column titles).
 /// </summary>
 public class QuickStatus
 {
     [JsonPropertyName("productId")]
     public string ProductId { get; set; } = string.Empty;
 
+    /// <summary>Instant sell price (in-game buy-order side).</summary>
     [JsonPropertyName("sellPrice")]
     public double SellPrice { get; set; }
 
@@ -73,6 +74,7 @@ public class QuickStatus
     [JsonPropertyName("sellOrders")]
     public int SellOrders { get; set; }
 
+    /// <summary>Instant buy price (in-game sell-offer side).</summary>
     [JsonPropertyName("buyPrice")]
     public double BuyPrice { get; set; }
 

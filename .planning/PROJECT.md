@@ -54,7 +54,7 @@ Based on existing codebase from https://github.com/Coflnet/SkyBazaar. The origin
 | Standalone service | Self-hosted, no external infrastructure dependencies | ✓ Good |
 | Local database (SQLite) | Store historical data without cloud services | ✓ Good |
 | Web frontend (React + Vite) | View data and flips locally | ✓ Good |
-| .NET 9 + EF Core | Modern .NET with mature ORM | ✓ Good |
+| .NET 10 + EF Core | Matches installed SDK/runtime on dev machines | ✓ Good |
 | Coflnet-style bazaar ingest | Poll until `LastUpdated` advances; `MinDelayAfterSnapshotSeconds` as double → `TimeSpan` (~9.5s); optional API key | ✓ Good |
 
 ---

@@ -1,7 +1,16 @@
 # Phase 1: Setup & Core Data - Context (REVISED)
 
-**Gathered:** 2026-03-28
-**Status:** Requires re-execution
+**Gathered:** 2026-03-28  
+**Status:** Implemented in repo (do not treat sections below as a pending checklist unless verifying regressions)
+
+## Current implementation snapshot (2026-03-28)
+
+- **Polling:** `BazaarFetcherService` uses poll-until-`LastUpdated` advances vs last DB snapshot; optional `Hypixel:ApiKey`.
+- **Delay:** `Bazaar:MinDelayAfterSnapshotSeconds` is a **double** (default **9.5**), stored as **`TimeSpan`** for the post-save delay and timer period (Coflnet-style cadence, not a 5-minute cron).
+- **Storage:** `PriceSnapshot` includes quick-status fields plus MessagePack **SerializedBuyOrders** / **SerializedSellOrders**; new rows use **`BazaarItem` navigation** (no FK=0 batching bug).
+- **HTTP:** `Program.cs` registers **`AddHttpClient<IHypixelApiService, HypixelApiService>()`**.
+
+The remainder of this file is retained as design history; downstream work should read the actual sources under `Services/` and `Models/`.
 
 <domain>
 ## Phase Boundary
