@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sqlite3
 import sys
@@ -69,9 +70,16 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def build_opener(user_agent: str, timeout_s: int) -> Tuple[urllib.request.OpenerDirector, int]:
+def build_opener(
+    user_agent: str,
+    timeout_s: int,
+    admin_key: Optional[str],
+) -> Tuple[urllib.request.OpenerDirector, int]:
     opener = urllib.request.build_opener()
-    opener.addheaders = [("User-Agent", user_agent), ("Accept", "application/json")]
+    headers: List[Tuple[str, str]] = [("User-Agent", user_agent), ("Accept", "application/json")]
+    if admin_key:
+        headers.append(("X-Admin-Key", admin_key))
+    opener.addheaders = headers
     return opener, timeout_s
 
 
@@ -256,8 +264,21 @@ def import_one(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Safe one-off bulk Coflnet importer")
-    parser.add_argument("--api-base", default="http://127.0.0.1:5000")
-    parser.add_argument("--db-path", default="skybazaar.db")
+    parser.add_argument(
+        "--api-base",
+        default=os.getenv("SKYBAZAAR_API_BASE", "http://127.0.0.1:8080"),
+        help="SkyBazaar API base URL (defaults to SKYBAZAAR_API_BASE or http://127.0.0.1:8080)",
+    )
+    parser.add_argument(
+        "--admin-key",
+        default=os.getenv("SKYBAZAAR_ADMIN_KEY", ""),
+        help="Optional X-Admin-Key for protected import endpoint",
+    )
+    parser.add_argument(
+        "--db-path",
+        default="",
+        help="Optional SQLite path for already-imported detection; leave empty when using Postgres",
+    )
     parser.add_argument("--start", default="2020-03-12T00:00:00Z")
     parser.add_argument("--end", default="2026-12-31T23:59:59Z")
     parser.add_argument("--timeout-s", type=int, default=180)
@@ -282,13 +303,17 @@ def main() -> int:
     args = parse_args()
     log_path = Path(args.log_path).resolve()
     fail_log_path = Path(args.fail_log_path).resolve()
-    db_path = Path(args.db_path).resolve()
+    db_path = Path(args.db_path).resolve() if args.db_path else None
 
     user_agent = (
         f"SkyBazaarOneOffImporter/1.0 "
         f"(safe-bulk-import; contact={args.contact}; reason=one-time-backfill)"
     )
-    opener, timeout_s = build_opener(user_agent=user_agent, timeout_s=args.timeout_s)
+    opener, timeout_s = build_opener(
+        user_agent=user_agent,
+        timeout_s=args.timeout_s,
+        admin_key=args.admin_key.strip() or None,
+    )
 
     print(f"[{utc_now_iso()}] Loading products from {args.api_base}/api/bazaar ...", flush=True)
     try:
@@ -297,7 +322,11 @@ def main() -> int:
         print(f"Failed to list products: {ex}", file=sys.stderr)
         return 1
 
-    imported_db = load_imported_from_db(db_path)
+    imported_db: Set[str] = set()
+    if db_path is not None:
+        imported_db = load_imported_from_db(db_path)
+    else:
+        print("DB-path check disabled (recommended when API uses Postgres).", flush=True)
     imported_log = load_processed_from_log(log_path)
     already_done = imported_db | imported_log
     pending = [pid for pid in all_products if pid not in already_done]

@@ -1,44 +1,82 @@
-@import './theme.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* ── Global styles ─────────────────────────────────────────── */
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  font-family: var(--font-sans);
+  background-color: #131313;
+  color: #e5e2e1;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-root);
-  background-image: radial-gradient(
-      ellipse 120% 80% at 50% -30%,
-      rgba(229, 184, 74, 0.08),
-      transparent 50%
-    ),
-    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(94, 234, 212, 0.04), transparent 45%);
-  color: var(--text);
-  min-height: 100vh;
 }
 
-code {
-  font-family: var(--font-mono);
+/* ── Material Symbols ──────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: #131313; }
+::-webkit-scrollbar-thumb  { background: #353534; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #ffb952; }
+
+/* ── PriceChart CSS vars (kept for Chart.js component) ───── */
+:root {
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --bg-root:         #131313;
+  --bg-elevated:     #0e0e0e;
+  --surface:         #201f1f;
+  --surface-hover:   #353534;
+  --border:          rgba(255,255,255,0.07);
+  --border-strong:   rgba(255,255,255,0.12);
+  --text:            #e5e2e1;
+  --text-muted:      #c6c4d9;
+  --text-faint:      #464556;
+  --accent:          #ffb952;
+  --accent-hover:    #ffc96e;
+  --accent-muted:    rgba(255,185,82,0.15);
+  --buy:             #ffb4ab;
+  --buy-soft:        rgba(255,180,171,0.12);
+  --sell:            #33e43d;
+  --sell-soft:       rgba(51,228,61,0.12);
+  --spread-high-bg:  rgba(51,228,61,0.12);
+  --spread-high-border: rgba(51,228,61,0.25);
+  --spread-med-bg:   rgba(255,185,82,0.12);
+  --spread-med-border: rgba(255,185,82,0.25);
+  --spread-low-bg:   rgba(255,255,255,0.04);
+  --spread-low-border: rgba(255,255,255,0.08);
+  --rank-gold:       #ffb952;
+  --rank-silver:     #a0aabb;
+  --rank-bronze:     #cd8a5a;
+  --radius-sm:       2px;
+  --radius-md:       4px;
+  --radius-lg:       4px;
+  --shadow-panel:    0 4px 24px rgba(0,0,0,0.45);
+  --shadow-elevated: 0 8px 40px rgba(0,0,0,0.6);
+  --sidebar-width:   256px;
+  --transition-fast: 0.12s ease;
+  --transition-med:  0.2s ease;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-elevated);
+/* ── Shimmer animation (used by skeleton rows) ─────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-faint);
+.sk {
+  border-radius: 2px;
+  background: linear-gradient(90deg, #201f1f 25%, #353534 50%, #201f1f 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }

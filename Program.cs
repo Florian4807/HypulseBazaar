@@ -14,6 +14,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database");
+var importPermitLimit = builder.Configuration.GetValue("ImportRateLimit:PermitLimit", 3);
+var importWindowSeconds = builder.Configuration.GetValue("ImportRateLimit:WindowSeconds", 60);
+var importQueueLimit = builder.Configuration.GetValue("ImportRateLimit:QueueLimit", 0);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -22,9 +25,9 @@ builder.Services.AddRateLimiter(options =>
         var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 3,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0,
+            PermitLimit = importPermitLimit,
+            Window = TimeSpan.FromSeconds(importWindowSeconds),
+            QueueLimit = importQueueLimit,
             AutoReplenishment = true
         });
     });

@@ -34,6 +34,11 @@ export interface FlipRecommendation {
   profitPercentage: number;
   volumeScore: number;
   recommendationScore: number;
+  /** Weekly buy volume (demand) — units placed as buy orders */
+  buyVolume: number;
+  /** Weekly sell volume (supply) — units placed as sell orders */
+  sellVolume: number;
+  lastUpdated: string;
 }
 
 export interface FlipsResponse {

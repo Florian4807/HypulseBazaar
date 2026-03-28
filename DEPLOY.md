@@ -84,3 +84,31 @@ Then point API + worker to Postgres via:
 - Run one worker replica only
 - Monitor `/health/ready` from your platform probes
 
+## Running Coflnet importer on Postgres
+
+The importer script writes through the API endpoint, so it writes to whatever database your API is using.
+
+For Docker Compose Postgres setup:
+
+1. Temporarily enable import on API and set a real admin key.
+2. Run importer against API port `8080` with `X-Admin-Key`.
+3. Disable import again when done.
+
+Example:
+
+```bash
+# 1) Temporarily set in docker-compose.yml for api service:
+#    Coflnet__EnableImport: "true"
+#    Security__ImportApiKey: "your-strong-key"
+docker compose up -d --force-recreate api
+
+# 2) Run one-off import (Postgres-backed API)
+python3 scripts/import_all_coflnet_safe.py \
+  --api-base http://127.0.0.1:8080 \
+  --admin-key your-strong-key \
+  --db-path ""
+
+# 3) Re-disable import in compose and recreate api
+docker compose up -d --force-recreate api
+```
+
