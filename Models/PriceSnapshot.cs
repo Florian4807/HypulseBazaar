@@ -49,12 +49,12 @@ public class PriceSnapshot
     public long SellVolume { get; set; }
 
     /// <summary>
-    /// 7-day moving average for buy price.
+    /// 7-day rolling buy volume.
     /// </summary>
     public long BuyMovingWeek { get; set; }
 
     /// <summary>
-    /// 7-day moving average for sell price.
+    /// 7-day rolling sell volume.
     /// </summary>
     public long SellMovingWeek { get; set; }
 

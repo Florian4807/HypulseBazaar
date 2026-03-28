@@ -137,11 +137,34 @@ public class HypixelApiService : IHypixelApiService
             var buyOrders = ParseTopOrders(product.Value.BuySummary, _ordersToStore);
             var sellOrders = ParseTopOrders(product.Value.SellSummary, _ordersToStore);
 
+            // Top-of-book: prefer summary first entry over quick_status when they differ
+            // Mirrors Coflnet's BazaarUpdater behavior
+            var sellPrice = (decimal)quickStatus.SellPrice;
+            var buyPrice = (decimal)quickStatus.BuyPrice;
+            
+            if (product.Value.SellSummary != null && product.Value.SellSummary.Count > 0)
+            {
+                var topSell = product.Value.SellSummary[0].PricePerUnit;
+                if (Math.Abs((double)topSell - (double)quickStatus.SellPrice) > 0.01)
+                {
+                    sellPrice = (decimal)topSell;
+                }
+            }
+            
+            if (product.Value.BuySummary != null && product.Value.BuySummary.Count > 0)
+            {
+                var topBuy = product.Value.BuySummary[0].PricePerUnit;
+                if (Math.Abs((double)topBuy - (double)quickStatus.BuyPrice) > 0.01)
+                {
+                    buyPrice = (decimal)topBuy;
+                }
+            }
+
             snapshots.Add(new BazaarItemSnapshot
             {
                 ProductId = quickStatus.ProductId,
-                BuyPrice = (decimal)quickStatus.BuyPrice,
-                SellPrice = (decimal)quickStatus.SellPrice,
+                BuyPrice = buyPrice,
+                SellPrice = sellPrice,
                 BuyVolume = quickStatus.BuyVolume,
                 SellVolume = quickStatus.SellVolume,
                 BuyMovingWeek = quickStatus.BuyMovingWeek,
