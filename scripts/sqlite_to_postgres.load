@@ -1,0 +1,4 @@
+LOAD DATABASE
+     FROM sqlite:///work/skybazaar.db
+     INTO postgresql://skybazaar:skybazaar-change-me@127.0.0.1:5432/skybazaar
+ WITH include drop, create tables, create indexes, reset sequences, foreign keys, quote identifiers;

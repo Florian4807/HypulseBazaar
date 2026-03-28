@@ -1,0 +1,86 @@
+# SkyBazaar Cloud Deployment
+
+This project now supports split deployment:
+
+- API service (`Worker__Enabled=false`)
+- Worker service (`Worker__Enabled=true`)
+- Shared PostgreSQL database
+
+## Quick start (Docker Compose)
+
+```bash
+docker compose up --build -d
+bash scripts/smoke-test.sh http://127.0.0.1:8080
+```
+
+## Important environment variables
+
+- `Database__Provider` = `sqlite` or `postgres`
+- `ConnectionStrings__DefaultConnection` = provider-specific connection string
+- `Worker__Enabled` = `true` for worker, `false` for API
+- `Security__RequireImportApiKey` = `true` in production
+- `Security__ImportApiKey` = long random secret
+- `Coflnet__EnableImport` = `false` by default in production
+
+## Can we keep existing SQLite data?
+
+Yes. You have two safe paths:
+
+1. **Keep SQLite in cloud with a persistent volume**
+   - No data migration required.
+   - Lower scale and resilience than Postgres.
+
+2. **Migrate SQLite -> PostgreSQL once**
+   - Keeps all existing snapshots, including `IsExternalImport` rows.
+   - Recommended for long-term cloud reliability.
+
+### One-time migration with pgloader
+
+Install/use pgloader and run:
+
+```bash
+pgloader \
+  "sqlite:///absolute/path/to/skybazaar.db" \
+  "postgresql://skybazaar:skybazaar-change-me@localhost:5432/skybazaar"
+```
+
+For this repository, a ready-to-run loader file is included at `scripts/sqlite_to_postgres.load`.
+If you use that path, run:
+
+```bash
+docker run --rm \
+  -v "$(pwd):/work" \
+  --network host \
+  dimitri/pgloader:latest \
+  pgloader /work/scripts/sqlite_to_postgres.load
+```
+
+Then normalize imported column types for EF Core compatibility:
+
+```bash
+docker exec -i skybazaar-postgres psql -U skybazaar -d skybazaar \
+  < scripts/postgres_fix_types.sql
+```
+
+After import, verify:
+
+```sql
+SELECT COUNT(*) AS snapshots, SUM(CASE WHEN "IsExternalImport" THEN 1 ELSE 0 END) AS external_imports
+FROM "Snapshots";
+```
+
+Then point API + worker to Postgres via:
+
+- `Database__Provider=postgres`
+- `ConnectionStrings__DefaultConnection=Host=...;Port=5432;Database=...;Username=...;Password=...`
+
+`appsettings.Production.json` already defaults to `Database__Provider=postgres`; override only if needed.
+
+## Production checklist
+
+- Use managed Postgres or persistent storage
+- Set a strong `Security__ImportApiKey`
+- Keep `Coflnet__EnableImport=false` unless intentionally importing
+- Run one worker replica only
+- Monitor `/health/ready` from your platform probes
+
