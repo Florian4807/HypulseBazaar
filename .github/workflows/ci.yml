@@ -28,7 +28,7 @@ jobs:
         run: dotnet restore SkyBazaar.Tests/SkyBazaar.Tests.csproj
 
       - name: Run tests
-        run: dotnet test SkyBazaar.Tests/SkyBazaar.Tests.csproj -c Release --no-build --verbosity normal
+        run: dotnet test SkyBazaar.Tests/SkyBazaar.Tests.csproj -c Release --verbosity normal
 
   frontend:
     name: Frontend Build
