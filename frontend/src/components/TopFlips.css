@@ -1,0 +1,175 @@
+.top-flips-container {
+  background-color: #1a1a2e;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.flips-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.flips-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.flips-title-section h2 {
+  font-size: 20px;
+  margin: 0;
+  color: #e0e0e0;
+}
+
+.last-updated {
+  font-size: 12px;
+  color: #888;
+}
+
+.refresh-btn {
+  padding: 8px 16px;
+  background-color: #6c5ce7;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: #5b4cdb;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.flips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.flip-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #0f0f1a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.flip-card:hover {
+  border-color: #6c5ce7;
+  transform: translateX(4px);
+}
+
+.flip-rank {
+  font-size: 18px;
+  font-weight: bold;
+  color: #6c5ce7;
+  min-width: 32px;
+}
+
+.flip-details {
+  flex: 1;
+}
+
+.flip-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.flip-prices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.price-label {
+  color: #888;
+}
+
+.buy-price {
+  color: #ff7675;
+  font-family: monospace;
+}
+
+.arrow {
+  color: #666;
+}
+
+.sell-price {
+  color: #00b894;
+  font-family: monospace;
+}
+
+.flip-profit {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.profit-margin {
+  color: #00b894;
+  font-weight: 500;
+}
+
+.profit-percent {
+  color: #00b894;
+  font-weight: 500;
+}
+
+.flip-score {
+  min-width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.score-high {
+  background-color: rgba(0, 184, 148, 0.2);
+  color: #00b894;
+}
+
+.score-medium {
+  background-color: rgba(253, 203, 110, 0.2);
+  color: #fdcb6e;
+}
+
+.score-low {
+  background-color: rgba(255, 118, 117, 0.2);
+  color: #ff7675;
+}
+
+.empty-state,
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  color: #ff7675;
+}

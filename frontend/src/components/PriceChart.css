@@ -1,0 +1,56 @@
+.price-chart-container {
+  background-color: #1a1a2e;
+  border-radius: 12px;
+  padding: 20px;
+  height: fit-content;
+}
+
+.chart-header {
+  margin-bottom: 16px;
+}
+
+.time-range-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.time-range-btn {
+  padding: 6px 12px;
+  background-color: #0f0f1a;
+  border: 1px solid #2d2d4a;
+  border-radius: 6px;
+  color: #888;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.time-range-btn:hover {
+  border-color: #6c5ce7;
+  color: #e0e0e0;
+}
+
+.time-range-btn.active {
+  background-color: #6c5ce7;
+  border-color: #6c5ce7;
+  color: white;
+}
+
+.chart-wrapper {
+  height: 400px;
+}
+
+.empty-state,
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  color: #ff7675;
+}

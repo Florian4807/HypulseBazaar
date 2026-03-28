@@ -27,7 +27,7 @@ function App() {
         return (
           <div className="items-view">
             <ItemsList onItemSelect={handleItemSelect} />
-            {selectedItem && currentView === 'history' && (
+            {selectedItem && (
               <PriceChart productId={selectedItem} />
             )}
           </div>
