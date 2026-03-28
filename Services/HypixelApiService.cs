@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Polly;
 using Polly.Retry;
 using SkyBazaar.Models;
+using MessagePack;
 
 namespace SkyBazaar.Services;
 
@@ -16,7 +17,16 @@ public interface IHypixelApiService
     /// <summary>
     /// Fetches the current bazaar data from Hypixel API.
     /// </summary>
-    Task<List<BazaarItemSnapshot>> GetBazaarAsync();
+    Task<BazaarApiResult> GetBazaarAsync();
+}
+
+/// <summary>
+/// Result from the Bazaar API containing snapshots and LastUpdated timestamp.
+/// </summary>
+public class BazaarApiResult
+{
+    public List<BazaarItemSnapshot> Snapshots { get; set; } = new();
+    public DateTime LastUpdated { get; set; }
 }
 
 /// <summary>
@@ -33,6 +43,8 @@ public class BazaarItemSnapshot
     public long SellMovingWeek { get; set; }
     public int BuyOrdersCount { get; set; }
     public int SellOrdersCount { get; set; }
+    public byte[]? SerializedBuyOrders { get; set; }
+    public byte[]? SerializedSellOrders { get; set; }
 }
 
 /// <summary>
@@ -45,6 +57,7 @@ public class HypixelApiService : IHypixelApiService
     private readonly IConfiguration _configuration;
     private readonly AsyncRetryPolicy _retryPolicy;
     private const string ApiBaseUrl = "https://api.hypixel.net/v2/skyblock/bazaar";
+    private readonly int _ordersToStore;
 
     public HypixelApiService(HttpClient httpClient, ILogger<HypixelApiService> logger, IConfiguration configuration)
     {
@@ -55,6 +68,7 @@ public class HypixelApiService : IHypixelApiService
         // Configure retry policy
         var maxRetries = _configuration.GetValue<int>("Bazaar:MaxRetries", 3);
         var retryDelaySeconds = _configuration.GetValue<int>("Bazaar:RetryDelaySeconds", 10);
+        _ordersToStore = _configuration.GetValue<int>("Bazaar:OrdersToStore", 3);
 
         _retryPolicy = Policy
             .Handle<HttpRequestException>()
@@ -71,13 +85,22 @@ public class HypixelApiService : IHypixelApiService
     }
 
     /// <inheritdoc/>
-    public async Task<List<BazaarItemSnapshot>> GetBazaarAsync()
+    public async Task<BazaarApiResult> GetBazaarAsync()
     {
         _logger.LogInformation("Fetching bazaar data from Hypixel API");
 
         var response = await _retryPolicy.ExecuteAsync(async () =>
         {
-            var response = await _httpClient.GetAsync(ApiBaseUrl);
+            var request = new HttpRequestMessage(HttpMethod.Get, ApiBaseUrl);
+            
+            // Add API key header if configured
+            var apiKey = _configuration["Hypixel:ApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                request.Headers.Add("API-Key", apiKey);
+            }
+            
+            var response = await _httpClient.SendAsync(request);
             
             // Handle rate limiting (429)
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
@@ -97,8 +120,11 @@ public class HypixelApiService : IHypixelApiService
         if (bazaarResponse?.Success != true || bazaarResponse.Products == null)
         {
             _logger.LogError("Failed to fetch bazaar data: API returned unsuccessful response");
-            return new List<BazaarItemSnapshot>();
+            return new BazaarApiResult();
         }
+
+        // Convert Unix timestamp to DateTime
+        var lastUpdated = DateTimeOffset.FromUnixTimeMilliseconds(bazaarResponse.LastUpdated).UtcDateTime;
 
         var snapshots = new List<BazaarItemSnapshot>();
 
@@ -106,6 +132,10 @@ public class HypixelApiService : IHypixelApiService
         {
             var quickStatus = product.Value.QuickStatus;
             if (quickStatus == null) continue;
+
+            // Parse top N order entries from buy/sell summaries
+            var buyOrders = ParseTopOrders(product.Value.BuySummary, _ordersToStore);
+            var sellOrders = ParseTopOrders(product.Value.SellSummary, _ordersToStore);
 
             snapshots.Add(new BazaarItemSnapshot
             {
@@ -117,11 +147,40 @@ public class HypixelApiService : IHypixelApiService
                 BuyMovingWeek = quickStatus.BuyMovingWeek,
                 SellMovingWeek = quickStatus.SellMovingWeek,
                 BuyOrdersCount = quickStatus.BuyOrders,
-                SellOrdersCount = quickStatus.SellOrders
+                SellOrdersCount = quickStatus.SellOrders,
+                SerializedBuyOrders = buyOrders,
+                SerializedSellOrders = sellOrders
             });
         }
 
-        _logger.LogInformation("Successfully fetched {Count} bazaar items", snapshots.Count);
-        return snapshots;
+        _logger.LogInformation("Successfully fetched {Count} bazaar items, LastUpdated: {LastUpdated}", 
+            snapshots.Count, lastUpdated);
+        
+        return new BazaarApiResult
+        {
+            Snapshots = snapshots,
+            LastUpdated = lastUpdated
+        };
+    }
+
+    /// <summary>
+    /// Parses top N orders from order summary and serializes them using MessagePack.
+    /// </summary>
+    private byte[]? ParseTopOrders(List<OrderSummary>? summaries, int topN)
+    {
+        if (summaries == null || summaries.Count == 0)
+            return null;
+
+        var topOrders = summaries
+            .Take(topN)
+            .Select(s => new Order
+            {
+                Amount = s.Amount,
+                PricePerUnit = s.PricePerUnit,
+                Orders = (short)s.Orders
+            })
+            .ToList();
+
+        return MessagePackSerializer.Serialize(topOrders);
     }
 }

@@ -10,6 +10,7 @@ namespace SkyBazaar.Services;
 
 /// <summary>
 /// Background service that periodically fetches bazaar data from Hypixel API and stores it in the database.
+/// Implements poll-until-advance logic similar to Coflnet's BazaarUpdater.
 /// </summary>
 public class BazaarFetcherService : IHostedService, IAsyncDisposable
 {
@@ -23,6 +24,8 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     
     private int _fetchIntervalSeconds;
     private int _retentionDays;
+    private int _pollWaitMs;
+    private int _maxPollRetries;
 
     public BazaarFetcherService(
         IHypixelApiService apiService,
@@ -38,19 +41,22 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         // Load configuration
         _fetchIntervalSeconds = _configuration.GetValue<int>("Bazaar:FetchIntervalSeconds", 300);
         _retentionDays = _configuration.GetValue<int>("Bazaar:RetentionDays", 30);
+        _pollWaitMs = _configuration.GetValue<int>("Bazaar:PollWaitMs", 500);
+        _maxPollRetries = _configuration.GetValue<int>("Bazaar:MaxPollRetries", 100);
     }
 
     /// <inheritdoc/>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "BazaarFetcherService starting. Fetch interval: {Interval}s, Retention: {Days} days",
-            _fetchIntervalSeconds, _retentionDays);
+            "BazaarFetcherService starting. Fetch interval: {Interval}s, Retention: {Days} days, Poll wait: {PollWait}ms, Max retries: {MaxRetries}",
+            _fetchIntervalSeconds, _retentionDays, _pollWaitMs, _maxPollRetries);
 
         // Run initial fetch on startup
         _ = ExecuteFetchAsync(cancellationToken);
 
         // Start the timer for periodic fetching
+        // Timer acts as "wake up and check" trigger - actual save only happens when data changes
         _timer = new Timer(
             async _ => await ExecuteFetchAsync(cancellationToken),
             null,
@@ -80,7 +86,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     }
 
     /// <summary>
-    /// Executes the bazaar data fetch and storage.
+    /// Executes the bazaar data fetch and storage with poll-until-advance logic.
     /// </summary>
     private async Task ExecuteFetchAsync(CancellationToken cancellationToken)
     {
@@ -95,22 +101,38 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
 
         try
         {
-            _logger.LogInformation("Starting bazaar data fetch");
+            _logger.LogInformation("Starting bazaar data fetch with poll-until-advance");
 
-            // Fetch data from API
-            var snapshots = await _apiService.GetBazaarAsync();
+            // Get the last stored timestamp from database
+            var lastStored = await GetLastStoredTimestampAsync(cancellationToken);
+            _logger.LogDebug("Last stored timestamp: {LastStored}", lastStored);
 
-            if (snapshots.Count == 0)
+            // Poll until LastUpdated advances or max retries hit
+            var result = await PullAndSaveAsync(lastStored, cancellationToken);
+            
+            if (result == null)
             {
-                _logger.LogWarning("No bazaar data fetched - possible API issue");
+                _logger.LogWarning("Failed to fetch updated bazaar data after {MaxRetries} retries", _maxPollRetries);
                 return;
             }
+
+            // Check if data actually changed
+            if (result.LastUpdated <= lastStored)
+            {
+                _logger.LogDebug("Bazaar data not updated (LastUpdated: {LastUpdated} <= lastStored: {LastStored})", 
+                    result.LastUpdated, lastStored);
+                return;
+            }
+
+            var snapshots = result.Snapshots;
+            _logger.LogInformation("Bazaar data updated. LastUpdated: {LastUpdated}, Items: {Count}", 
+                result.LastUpdated, snapshots.Count);
 
             // Use DbContextFactory to get a context for this operation
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
             // Store snapshots in database
-            var timestamp = DateTime.UtcNow;
+            var timestamp = result.LastUpdated;
             var itemsCreated = 0;
 
             foreach (var snapshot in snapshots)
@@ -133,7 +155,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                     itemsCreated++;
                 }
 
-                // Create price snapshot
+                // Create price snapshot with serialized order data
                 var priceSnapshot = new PriceSnapshot
                 {
                     BazaarItemId = bazaarItem.Id,
@@ -145,7 +167,9 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                     BuyMovingWeek = snapshot.BuyMovingWeek,
                     SellMovingWeek = snapshot.SellMovingWeek,
                     BuyOrdersCount = snapshot.BuyOrdersCount,
-                    SellOrdersCount = snapshot.SellOrdersCount
+                    SellOrdersCount = snapshot.SellOrdersCount,
+                    SerializedBuyOrders = snapshot.SerializedBuyOrders,
+                    SerializedSellOrders = snapshot.SerializedSellOrders
                 };
 
                 dbContext.Snapshots.Add(priceSnapshot);
@@ -168,6 +192,59 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         finally
         {
             _isFetching = false;
+        }
+    }
+
+    /// <summary>
+    /// Polls the API until LastUpdated advances or max retries hit.
+    /// Mirrors Coflnet's BazaarUpdater.PullAndSave logic.
+    /// </summary>
+    private async Task<BazaarApiResult?> PullAndSaveAsync(DateTime lastUpdate, CancellationToken cancellationToken)
+    {
+        var tryCount = 0;
+        
+        while (tryCount < _maxPollRetries)
+        {
+            var result = await _apiService.GetBazaarAsync();
+            
+            // Check if timestamp changed - KEY BEHAVIOR
+            if (result.LastUpdated <= lastUpdate)
+            {
+                tryCount++;
+                if (tryCount % 10 == 1)
+                    _logger.LogInformation("Bazaar not updated after {TryCount} attempts...", tryCount);
+                
+                await Task.Delay(_pollWaitMs, cancellationToken);
+                continue;
+            }
+            
+            // Data has updated - return result for processing
+            return result;
+        }
+        
+        // Max retries hit - return null to indicate failure
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the last stored timestamp from the database.
+    /// </summary>
+    private async Task<DateTime> GetLastStoredTimestampAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+            
+            var latestSnapshot = await dbContext.Snapshots
+                .OrderByDescending(s => s.Timestamp)
+                .FirstOrDefaultAsync(cancellationToken);
+            
+            return latestSnapshot?.Timestamp ?? DateTime.MinValue;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get last stored timestamp, using default");
+            return DateTime.MinValue;
         }
     }
 

@@ -12,6 +12,12 @@ public class HypixelBazaarResponse
 
     [JsonPropertyName("products")]
     public Dictionary<string, ProductInfo>? Products { get; set; }
+
+    /// <summary>
+    /// Unix timestamp of when the bazaar data was last updated.
+    /// </summary>
+    [JsonPropertyName("lastUpdated")]
+    public long LastUpdated { get; set; }
 }
 
 /// <summary>
