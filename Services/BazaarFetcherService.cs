@@ -153,8 +153,12 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                         UpdatedAt = timestamp
                     };
                     dbContext.Items.Add(bazaarItem);
-                    await dbContext.SaveChangesAsync(cancellationToken);
                     itemsCreated++;
+                }
+                else
+                {
+                    // Update UpdatedAt for existing items when new snapshot is inserted
+                    bazaarItem.UpdatedAt = timestamp;
                 }
 
                 // Create price snapshot with serialized order data
