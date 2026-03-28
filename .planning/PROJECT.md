@@ -16,12 +16,12 @@ Track Hypixel SkyBlock bazaar prices over time to identify profitable flips.
 - ✓ Remove all microservice dependencies (Kafka, Redis, etc.) — Phase 1
 - ✓ Process Hypixel SkyBlock bazaar API data — Phase 1
 - ✓ Store bazaar data in local database for historical analysis — Phase 1
+- ✓ Query historical bazaar data via API — Phase 2
+- ✓ Calculate profitable flips — Phase 2
 
 ### Active
 
-- [ ] Query historical bazaar data via API
-- [ ] Display items with price history
-- [ ] Calculate and display profitable flips
+- [ ] Display items with price history (Frontend)
 
 ### Out of Scope
 
@@ -55,7 +55,7 @@ Based on existing codebase from https://github.com/Coflnet/SkyBazaar. The origin
 | .NET 9 + EF Core | Modern .NET with mature ORM | ✓ Good |
 
 ---
-*Last updated: 2026-03-28 after Phase 1*
+*Last updated: 2026-03-28 after Phase 2*
 
 ## Evolution
 
