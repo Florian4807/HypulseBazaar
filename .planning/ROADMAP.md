@@ -34,7 +34,8 @@
 7. Price history includes buy price, sell price, and moving average
 8. Data retention is configurable (can set number of days to keep)
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [ ] 01-01-PLAN.md — Core data pipeline: fetch, parse, store bazaar data
 
 ### Phase 2: API & Flip Analysis
 
@@ -79,7 +80,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup & Core Data | 0/1 | Not started | - |
+| 1. Setup & Core Data | 1/1 | Planned | - |
 | 2. API & Flip Analysis | 0/1 | Not started | - |
 | 3. Frontend | 0/1 | Not started | - |
 
