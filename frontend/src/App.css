@@ -1,0 +1,27 @@
+.app {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f1a;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  margin-left: 250px;
+  color: #e0e0e0;
+}
+
+.items-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #666;
+  font-size: 16px;
+}
