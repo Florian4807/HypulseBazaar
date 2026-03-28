@@ -26,6 +26,9 @@ builder.Services.AddSingleton<IHypixelApiService, HypixelApiService>();
 // Register the background fetcher service
 builder.Services.AddHostedService<BazaarFetcherService>();
 
+// Register the flip detection service
+builder.Services.AddScoped<IFlipDetectionService, FlipDetectionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
