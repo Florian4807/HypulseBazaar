@@ -10,7 +10,7 @@
 - [x] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API (completed 2026-03-28)
 - [x] **Phase 1 (Rev):** Revision planned - align with Coflnet polling + rich data model (completed 2026-03-28)
 - [x] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities (completed 2026-03-28)
-- [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI (BLOCKED - waiting for Phase 1 revision)
+- [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI (READY - Phase 1 revision complete)
 
 ---
 
@@ -91,7 +91,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup & Core Data | 2/2 | Complete   | 2026-03-28 |
+| 1. Setup & Core Data | 2/2 | Complete    | 2026-03-28 |
 | 2. API & Flip Analysis | 2/2 | Complete    | 2026-03-28 |
 | 3. Frontend | 1/1 | Planned | - |
 
