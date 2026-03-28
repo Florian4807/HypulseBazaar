@@ -80,7 +80,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup & Core Data | 1/1 | Complete   | 2026-03-28 |
+| 1. Setup & Core Data | 1/1 | Complete    | 2026-03-28 |
 | 2. API & Flip Analysis | 0/1 | Not started | - |
 | 3. Frontend | 0/1 | Not started | - |
 
