@@ -45,7 +45,7 @@ public class SkyBazaarDbContext : DbContext
         modelBuilder.Entity<PriceSnapshot>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.BazaarItemId, e.Timestamp });
+            entity.HasIndex(e => new { e.BazaarItemId, e.Timestamp }).IsUnique();
             entity.HasOne(e => e.BazaarItem)
                 .WithMany(b => b.Snapshots)
                 .HasForeignKey(e => e.BazaarItemId)

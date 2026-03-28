@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SkyBazaar.Models;
+using System.Data;
 
 namespace SkyBazaar.Data;
 
@@ -21,17 +22,44 @@ public static class SqliteSchemaExtensions
             return;
         }
 
+        var connection = db.Database.GetDbConnection();
+        var openedHere = false;
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+            openedHere = true;
+        }
+
         try
         {
+            await using var tableCmd = connection.CreateCommand();
+            tableCmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'Snapshots' LIMIT 1;";
+            var snapshotsTableExists = await tableCmd.ExecuteScalarAsync(cancellationToken) != null;
+            if (!snapshotsTableExists)
+            {
+                return;
+            }
+
+            await using var columnCmd = connection.CreateCommand();
+            columnCmd.CommandText = "SELECT 1 FROM pragma_table_info('Snapshots') WHERE name = 'IsExternalImport' LIMIT 1;";
+            var columnExists = await columnCmd.ExecuteScalarAsync(cancellationToken) != null;
+            if (columnExists)
+            {
+                return;
+            }
+
             await db.Database.ExecuteSqlRawAsync(
                 """
                 ALTER TABLE "Snapshots" ADD COLUMN "IsExternalImport" INTEGER NOT NULL DEFAULT 0
                 """,
                 cancellationToken);
         }
-        catch (Exception ex) when (ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
+        finally
         {
-            // Column already present
+            if (openedHere && connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
         }
     }
 }

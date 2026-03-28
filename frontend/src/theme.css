@@ -23,10 +23,25 @@
   --sell: #5eead4;
   --sell-soft: rgba(94, 234, 212, 0.12);
 
+  --spread-high-bg: rgba(94, 234, 212, 0.12);
+  --spread-high-border: rgba(94, 234, 212, 0.25);
+  --spread-med-bg: rgba(229, 184, 74, 0.12);
+  --spread-med-border: rgba(229, 184, 74, 0.25);
+  --spread-low-bg: rgba(255, 255, 255, 0.04);
+  --spread-low-border: rgba(255, 255, 255, 0.08);
+
+  --rank-gold: #e5b84a;
+  --rank-silver: #a0aabb;
+  --rank-bronze: #cd8a5a;
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
 
   --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.35);
-  --sidebar-width: 260px;
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --sidebar-width: 248px;
+
+  --transition-fast: 0.12s ease;
+  --transition-med: 0.2s ease;
 }

@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: skybazaar-postgres
+    environment:
+      POSTGRES_DB: skybazaar
+      POSTGRES_USER: skybazaar
+      POSTGRES_PASSWORD: skybazaar-change-me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skybazaar -d skybazaar"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skybazaar-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__Provider: postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=skybazaar;Username=skybazaar;Password=skybazaar-change-me
+      Worker__Enabled: "false"
+      Security__RequireImportApiKey: "true"
+      Security__ImportApiKey: change-this-admin-key
+      Coflnet__EnableImport: "false"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skybazaar-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__Provider: postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=skybazaar;Username=skybazaar;Password=skybazaar-change-me
+      Worker__Enabled: "true"
+      Security__RequireImportApiKey: "true"
+      Security__ImportApiKey: change-this-admin-key
+      Coflnet__EnableImport: "false"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+

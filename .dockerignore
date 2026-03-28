@@ -1,0 +1,13 @@
+.git
+.planning
+**/bin
+**/obj
+frontend/node_modules
+frontend/dist
+temp-*
+*.db
+*.db-shm
+*.db-wal
+coflnet-import-*.jsonl
+agent-tools
+

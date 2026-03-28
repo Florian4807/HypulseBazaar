@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,20 +11,16 @@ namespace SkyBazaar.Services;
 /// Background service that periodically fetches bazaar data from Hypixel API and stores it in the database.
 /// Implements poll-until-advance logic similar to Coflnet's BazaarUpdater.
 /// </summary>
-public class BazaarFetcherService : IHostedService, IAsyncDisposable
+public class BazaarFetcherService : BackgroundService
 {
     private readonly IHypixelApiService _apiService;
     private readonly IDbContextFactory<SkyBazaarDbContext> _dbContextFactory;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<BazaarFetcherService> _logger;
-    
-    private Timer? _timer;
-    private bool _isFetching;
-    
+
     private readonly TimeSpan _minDelayAfterSnapshot;
-    private int _retentionDays;
-    private int _pollWaitMs;
-    private int _maxPollRetries;
+    private readonly int _retentionDays;
+    private readonly int _pollWaitMs;
+    private readonly int _maxPollRetries;
 
     public BazaarFetcherService(
         IHypixelApiService apiService,
@@ -35,70 +30,45 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     {
         _apiService = apiService;
         _dbContextFactory = dbContextFactory;
-        _configuration = configuration;
         _logger = logger;
-        
+
         // Load configuration (seconds may be fractional — matches Coflnet ~9.5s between polls)
-        var delaySeconds = _configuration.GetValue<double>("Bazaar:MinDelayAfterSnapshotSeconds", 9.5);
+        var delaySeconds = configuration.GetValue<double>("Bazaar:MinDelayAfterSnapshotSeconds", 9.5);
         _minDelayAfterSnapshot = TimeSpan.FromSeconds(delaySeconds);
-        _retentionDays = _configuration.GetValue<int>("Bazaar:RetentionDays", 30);
-        _pollWaitMs = _configuration.GetValue<int>("Bazaar:PollWaitMs", 500);
-        _maxPollRetries = _configuration.GetValue<int>("Bazaar:MaxPollRetries", 100);
+        _retentionDays = configuration.GetValue<int>("Bazaar:RetentionDays", 30);
+        _pollWaitMs = configuration.GetValue<int>("Bazaar:PollWaitMs", 500);
+        _maxPollRetries = configuration.GetValue<int>("Bazaar:MaxPollRetries", 100);
     }
 
-    /// <inheritdoc/>
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation(
             "BazaarFetcherService starting. Min delay after snapshot: {Delay}s, Retention: {Days} days, Poll wait: {PollWait}ms, Max retries: {MaxRetries}",
             _minDelayAfterSnapshot.TotalSeconds, _retentionDays, _pollWaitMs, _maxPollRetries);
 
-        // Run initial fetch on startup
-        _ = ExecuteFetchAsync(cancellationToken);
+        // Initial fetch on startup.
+        await ExecuteFetchCycleAsync(stoppingToken);
 
-        // Short periodic wake (same cadence as post-save delay) so we retry if a fetch was skipped while busy
-        _timer = new Timer(
-            async _ => await ExecuteFetchAsync(cancellationToken),
-            null,
-            _minDelayAfterSnapshot,
-            _minDelayAfterSnapshot);
-
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc/>
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("BazaarFetcherService stopping");
-
-        _timer?.Change(Timeout.Infinite, 0);
-
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc/>
-    public async ValueTask DisposeAsync()
-    {
-        if (_timer != null)
+        using var timer = new PeriodicTimer(_minDelayAfterSnapshot);
+        try
         {
-            await _timer.DisposeAsync();
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await ExecuteFetchCycleAsync(stoppingToken);
+            }
         }
+        catch (OperationCanceledException)
+        {
+            // Graceful shutdown.
+        }
+        _logger.LogInformation("BazaarFetcherService stopping");
     }
 
     /// <summary>
-    /// Executes the bazaar data fetch and storage with poll-until-advance logic.
+    /// Executes one fetch/store/cleanup cycle with poll-until-advance logic.
     /// </summary>
-    private async Task ExecuteFetchAsync(CancellationToken cancellationToken)
+    private async Task ExecuteFetchCycleAsync(CancellationToken cancellationToken)
     {
-        // Prevent concurrent fetches
-        if (_isFetching)
-        {
-            _logger.LogDebug("Skipping fetch - already in progress");
-            return;
-        }
-
-        _isFetching = true;
-
         try
         {
             _logger.LogInformation("Starting bazaar data fetch with poll-until-advance");
@@ -186,19 +156,16 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                 "Bazaar data fetch completed. Items: {Total}, New items: {New}",
                 snapshots.Count, itemsCreated);
 
-            // Delay after successful store before next poll (mirrors Coflnet's ~9.5s delay)
-            await Task.Delay(_minDelayAfterSnapshot, cancellationToken);
-
             // Clean up old data
             await CleanupOldDataAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Graceful shutdown.
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during bazaar data fetch");
-        }
-        finally
-        {
-            _isFetching = false;
         }
     }
 
@@ -220,15 +187,15 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                 tryCount++;
                 if (tryCount % 10 == 1)
                     _logger.LogInformation("Bazaar not updated after {TryCount} attempts...", tryCount);
-                
+
                 await Task.Delay(_pollWaitMs, cancellationToken);
                 continue;
             }
-            
+
             // Data has updated - return result for processing
             return result;
         }
-        
+
         // Max retries hit - return null to indicate failure
         return null;
     }
@@ -241,11 +208,11 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         try
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-            
+
             var latestSnapshot = await dbContext.Snapshots
                 .OrderByDescending(s => s.Timestamp)
                 .FirstOrDefaultAsync(cancellationToken);
-            
+
             return latestSnapshot?.Timestamp ?? DateTime.MinValue;
         }
         catch (Exception ex)
@@ -261,9 +228,9 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     private async Task CleanupOldDataAsync(CancellationToken cancellationToken)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        
+
         var cutoffDate = DateTime.UtcNow.AddDays(-_retentionDays);
-        
+
         var oldSnapshots = await dbContext.Snapshots
             .Where(s => !s.IsExternalImport && s.Timestamp < cutoffDate)
             .ToListAsync(cancellationToken);
@@ -272,7 +239,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         {
             dbContext.Snapshots.RemoveRange(oldSnapshots);
             await dbContext.SaveChangesAsync(cancellationToken);
-            
+
             _logger.LogInformation("Cleaned up {Count} old price snapshots (older than {Days} days)",
                 oldSnapshots.Count, _retentionDays);
         }
@@ -300,7 +267,7 @@ public static class StringExtensions
     public static string ToTitleCase(this string str)
     {
         if (string.IsNullOrEmpty(str)) return str;
-        
+
         var words = str.Split(' ');
         for (int i = 0; i < words.Length; i++)
         {

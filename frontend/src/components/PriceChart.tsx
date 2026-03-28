@@ -15,42 +15,34 @@ import { getItemHistory } from '../services/api';
 import type { PriceHistory } from '../types/api';
 import './PriceChart.css';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 interface PriceChartProps {
   productId: string;
+  onBack?: () => void;
 }
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
-const RANGE_OPTIONS: { value: TimeRange; short: string; title: string }[] = [
-  { value: '24h', short: '24h', title: 'Last 24 hours' },
-  { value: '7d', short: '7d', title: 'Last 7 days' },
-  { value: '30d', short: '30d', title: 'Last 30 days' },
-  { value: 'all', short: 'All', title: 'All stored history' },
+const RANGE_OPTIONS: { value: TimeRange; label: string; title: string }[] = [
+  { value: '24h', label: '24h', title: 'Last 24 hours' },
+  { value: '7d', label: '7d', title: 'Last 7 days' },
+  { value: '30d', label: '30d', title: 'Last 30 days' },
+  { value: 'all', label: 'All', title: 'All stored history' },
 ];
+
+const CHART_FONT = "'Plus Jakarta Sans', system-ui, sans-serif";
+const MONO_FONT = "'JetBrains Mono', ui-monospace, monospace";
 
 function parseTimestamp(iso: string): Date {
   const t = iso.trim();
   if (!t) return new Date(NaN);
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(t)) {
-    return new Date(`${t}Z`);
-  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(t)) return new Date(`${t}Z`);
   return new Date(t);
 }
 
 function formatDate(timestamp: string): string {
-  const date = parseTimestamp(timestamp);
-  return date.toLocaleString('en-US', {
+  return parseTimestamp(timestamp).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -59,41 +51,37 @@ function formatDate(timestamp: string): string {
   });
 }
 
-/** Shorter x-axis labels when the series spans months/years (avoids thousands of unique long strings). */
-function formatAxisLabel(iso: string, spanDays: number): string {
-  const d = parseTimestamp(iso);
-  if (spanDays > 400) {
-    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  }
-  if (spanDays > 45) {
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }
-  return formatDate(iso);
-}
-
-/** Same formatter as formatAxisLabel(), but for epoch-millisecond x-axis ticks. */
 function formatAxisLabelFromMs(ms: number, spanDays: number): string {
-  return formatAxisLabel(new Date(ms).toISOString(), spanDays);
+  const d = new Date(ms);
+  if (spanDays > 400) return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  if (spanDays > 45) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatPrice(price: number): string {
-  return price.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-const CHART_FONT = "'Plus Jakarta Sans', system-ui, sans-serif";
+function formatPriceFull(price: number): string {
+  return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-function PriceChart({ productId }: PriceChartProps) {
+function StatCard({
+  label, value, colorClass, hint,
+}: { label: string; value: string; colorClass: string; hint?: string }) {
+  return (
+    <div className={`stat-card stat-card--${colorClass}`}>
+      <div className="stat-label" title={hint}>{label}</div>
+      <div className={`stat-value stat-value--${colorClass}`}>{value}</div>
+      {hint && <div className="stat-hint">{hint}</div>}
+    </div>
+  );
+}
+
+function PriceChart({ productId, onBack }: PriceChartProps) {
   const [history, setHistory] = useState<PriceHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  /** Default to full series so Coflnet imports and long retention are visible without an extra click. Narrow with 24h/7d/30d if needed. */
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
 
   useEffect(() => {
@@ -103,22 +91,12 @@ function PriceChart({ productId }: PriceChartProps) {
       try {
         const now = new Date();
         let start: string | undefined;
-
         switch (timeRange) {
-          case '24h':
-            start = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-            break;
-          case '7d':
-            start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            break;
-          case '30d':
-            start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-            break;
-          case 'all':
-            start = undefined;
-            break;
+          case '24h': start = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(); break;
+          case '7d': start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(); break;
+          case '30d': start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(); break;
+          case 'all': start = undefined; break;
         }
-
         const data = await getItemHistory(productId, start);
         setHistory(data);
       } catch (err) {
@@ -128,7 +106,6 @@ function PriceChart({ productId }: PriceChartProps) {
         setLoading(false);
       }
     }
-
     fetchHistory();
   }, [productId, timeRange]);
 
@@ -142,9 +119,9 @@ function PriceChart({ productId }: PriceChartProps) {
   const latestStats = useMemo(() => {
     if (!orderedSnapshots.length) return null;
     const last = orderedSnapshots[orderedSnapshots.length - 1];
-    // Bid–ask spread: instant buy (ask) − instant sell (bid); positive in a normal book
     const spread = last.buyPrice - last.sellPrice;
-    return { buy: last.buyPrice, sell: last.sellPrice, spread };
+    const spreadPct = last.sellPrice > 0 ? (spread / last.sellPrice) * 100 : 0;
+    return { buy: last.buyPrice, sell: last.sellPrice, spread, spreadPct };
   }, [orderedSnapshots]);
 
   const spanDays = useMemo(() => {
@@ -163,206 +140,154 @@ function PriceChart({ productId }: PriceChartProps) {
 
   const chartData = useMemo(() => {
     if (!orderedSnapshots.length) return null;
-
     return {
       datasets: [
         {
-          label: 'Instant buy (sell offers)',
-          data: orderedSnapshots.map((s) => ({
-            x: parseTimestamp(s.timestamp).getTime(),
-            y: s.buyPrice,
-          })),
+          label: 'Instant Buy',
+          data: orderedSnapshots.map((s) => ({ x: parseTimestamp(s.timestamp).getTime(), y: s.buyPrice })),
           borderColor: '#f87171',
-          backgroundColor: 'rgba(248, 113, 113, 0.08)',
+          backgroundColor: 'rgba(248, 113, 113, 0.07)',
           fill: true,
           tension: 0.35,
           borderWidth: 2,
           pointRadius: 0,
-          pointHoverRadius: 4,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#f87171',
+          pointHoverBorderColor: '#141824',
+          pointHoverBorderWidth: 2,
         },
         {
-          label: 'Instant sell (buy orders)',
-          data: orderedSnapshots.map((s) => ({
-            x: parseTimestamp(s.timestamp).getTime(),
-            y: s.sellPrice,
-          })),
+          label: 'Instant Sell',
+          data: orderedSnapshots.map((s) => ({ x: parseTimestamp(s.timestamp).getTime(), y: s.sellPrice })),
           borderColor: '#5eead4',
-          backgroundColor: 'rgba(94, 234, 212, 0.06)',
+          backgroundColor: 'rgba(94, 234, 212, 0.05)',
           fill: true,
           tension: 0.35,
           borderWidth: 2,
           pointRadius: 0,
-          pointHoverRadius: 4,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#5eead4',
+          pointHoverBorderColor: '#141824',
+          pointHoverBorderWidth: 2,
         },
       ],
     };
-  }, [orderedSnapshots, spanDays]);
+  }, [orderedSnapshots]);
 
-  const dataSpanHint = useMemo(() => {
-    if (!history?.snapshots.length || orderedSnapshots.length < 2) return null;
-    const first = parseTimestamp(orderedSnapshots[0].timestamp);
-    const last = parseTimestamp(orderedSnapshots[orderedSnapshots.length - 1].timestamp);
-    const spanMin = (last.getTime() - first.getTime()) / 60_000;
-    if (spanMin <= 0) return null;
-    const rounded = Math.max(1, Math.round(spanMin));
-    if (spanMin < 24 * 60) {
-      return `${history.snapshots.length} snapshots over ~${rounded} min (UTC from Hypixel, shown in your local time). “${RANGE_OPTIONS.find((r) => r.value === timeRange)?.title ?? ''}” only limits the window — a new database only has data since the app started.`;
-    }
-    return null;
-  }, [history, orderedSnapshots, timeRange]);
-
-  const options = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index' as const,
-        intersect: false,
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index' as const, intersect: false },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        align: 'end' as const,
+        labels: {
+          color: '#8b92a5',
+          font: { family: CHART_FONT, size: 12 },
+          usePointStyle: true,
+          boxWidth: 8,
+          padding: 16,
+        },
       },
-      plugins: {
-        legend: {
-          position: 'top' as const,
-          align: 'end' as const,
-          labels: {
-            color: '#8b92a5',
-            font: { family: CHART_FONT, size: 12 },
-            usePointStyle: true,
-            boxWidth: 8,
-            padding: 16,
+      title: { display: false },
+      tooltip: {
+        backgroundColor: '#0f1118',
+        titleColor: '#e8eaef',
+        bodyColor: '#e8eaef',
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        padding: 14,
+        cornerRadius: 10,
+        titleFont: { family: CHART_FONT, size: 12, weight: 600 as const },
+        bodyFont: { family: MONO_FONT, size: 13 },
+        callbacks: {
+          title: (items: any[]) => {
+            if (!items.length) return '';
+            const x = items[0]?.parsed?.x;
+            if (typeof x === 'number') return formatDate(new Date(x).toISOString());
+            if (!orderedSnapshots.length) return '';
+            const snap = orderedSnapshots[items[0].dataIndex];
+            return snap ? formatDate(snap.timestamp) : '';
           },
-        },
-        title: {
-          display: false,
-        },
-        tooltip: {
-          backgroundColor: '#141824',
-          titleColor: '#e8eaef',
-          bodyColor: '#e8eaef',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: { family: CHART_FONT, size: 12, weight: 600 },
-          bodyFont: { family: CHART_FONT, size: 13 },
-          callbacks: {
-            title: (items: any[]) => {
-              if (!items.length) return '';
-              const x = items[0]?.parsed?.x;
-              if (typeof x === 'number') {
-                return formatDate(new Date(x).toISOString());
-              }
-              if (!orderedSnapshots.length) return '';
-              const snap = orderedSnapshots[items[0].dataIndex];
-              return snap ? formatDate(snap.timestamp) : '';
-            },
-            label: (ctx: { dataset: { label?: string }; raw: unknown }) => {
-              const raw = ctx.raw as { y?: number } | number;
-              const v = typeof raw === 'number' ? raw : Number(raw?.y);
-              return `${ctx.dataset.label ?? ''}: ${formatPrice(v)} coins`;
-            },
+          label: (ctx: { dataset: { label?: string }; raw: unknown }) => {
+            const raw = ctx.raw as { y?: number } | number;
+            const v = typeof raw === 'number' ? raw : Number((raw as { y?: number })?.y);
+            return `  ${ctx.dataset.label ?? ''}: ${formatPriceFull(v)} coins`;
+          },
+          afterBody: (items: any[]) => {
+            if (items.length < 2) return [];
+            const buyRaw = items.find(i => i.dataset.label === 'Instant Buy')?.raw as { y?: number } | undefined;
+            const sellRaw = items.find(i => i.dataset.label === 'Instant Sell')?.raw as { y?: number } | undefined;
+            if (!buyRaw || !sellRaw) return [];
+            const spread = Number(buyRaw.y) - Number(sellRaw.y);
+            return [`  Spread: ${formatPriceFull(spread)} coins`];
           },
         },
       },
-      scales: {
-        x: {
-          type: 'linear' as const,
-          offset: false,
-          bounds: 'data' as const,
-          min: xDomain?.min,
-          max: xDomain?.max,
-          ticks: {
-            color: '#5c6375',
-            maxTicksLimit: timeRange === 'all' ? 18 : 8,
-            maxRotation: timeRange === 'all' ? 45 : 0,
-            autoSkip: true,
-            font: { family: CHART_FONT, size: 11 },
-            callback: (value: string | number) => {
-              const ms = Number(value);
-              if (!Number.isFinite(ms)) return '';
-              return formatAxisLabelFromMs(ms, spanDays);
-            },
-          },
-          grid: {
-            color: 'rgba(255,255,255,0.04)',
+    },
+    scales: {
+      x: {
+        type: 'linear' as const,
+        offset: false,
+        bounds: 'data' as const,
+        min: xDomain?.min,
+        max: xDomain?.max,
+        ticks: {
+          color: '#5c6375',
+          maxTicksLimit: timeRange === 'all' ? 18 : 8,
+          maxRotation: timeRange === 'all' ? 45 : 0,
+          autoSkip: true,
+          font: { family: CHART_FONT, size: 11 },
+          callback: (value: string | number) => {
+            const ms = Number(value);
+            if (!Number.isFinite(ms)) return '';
+            return formatAxisLabelFromMs(ms, spanDays);
           },
         },
-        y: {
-          ticks: {
-            color: '#5c6375',
-            font: { family: "'JetBrains Mono', monospace", size: 11 },
-            callback: (value: string | number) => formatPrice(Number(value)),
-          },
-          grid: {
-            color: 'rgba(255,255,255,0.06)',
-          },
-        },
+        grid: { color: 'rgba(255,255,255,0.04)' },
       },
-    }),
-    [orderedSnapshots, timeRange, spanDays, xDomain]
-  );
-
-  if (loading) {
-    return (
-      <div className="price-chart-container">
-        <div className="chart-loading" role="status">
-          Loading price history…
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="price-chart-container">
-        <div className="chart-error">{error}</div>
-      </div>
-    );
-  }
-
-  if (!history?.snapshots.length) {
-    return (
-      <div className="price-chart-container">
-        <div className="chart-empty">No price history for this item yet.</div>
-      </div>
-    );
-  }
+      y: {
+        ticks: {
+          color: '#5c6375',
+          font: { family: MONO_FONT, size: 11 },
+          callback: (value: string | number) => formatPrice(Number(value)),
+        },
+        grid: { color: 'rgba(255,255,255,0.05)' },
+      },
+    },
+  }), [orderedSnapshots, timeRange, spanDays, xDomain]);
 
   const activeRange = RANGE_OPTIONS.find((r) => r.value === timeRange);
 
+  const hasData = history && history.snapshots.length > 0;
+  const isSparse = hasData && orderedSnapshots.length < 3;
+
   return (
     <div className="price-chart-container">
-      <div className="price-chart-panel-header">
-        <div className="price-chart-title-block">
-          <h2 className="price-chart-product">{history.productName || productId}</h2>
-          <div className="price-chart-id">{productId}</div>
+      {/* Header */}
+      <div className="chart-header">
+        <div className="chart-title-block">
+          {onBack && (
+            <button type="button" className="chart-back-btn" onClick={onBack} aria-label="Back to items">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Items
+            </button>
+          )}
+          {loading && !history ? (
+            <div className="chart-title-skeleton">
+              <div className="sk sk-title" />
+              <div className="sk sk-id" />
+            </div>
+          ) : (
+            <>
+              <h2 className="chart-product-name">{history?.productName || productId}</h2>
+              <span className="chart-product-id">{productId}</span>
+            </>
+          )}
         </div>
-      </div>
-
-      {latestStats && (
-        <div className="price-chart-stats" aria-label="Latest snapshot">
-          <div className="stat-card">
-            <div className="stat-label">
-              <abbr title="Coins to buy one now (Hypixel buyPrice; in-game sell offers)">Instant buy</abbr>
-            </div>
-            <div className="stat-value buy">{formatPrice(latestStats.buy)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">
-              <abbr title="Coins when selling one now (Hypixel sellPrice; in-game buy orders)">Instant sell</abbr>
-            </div>
-            <div className="stat-value sell">{formatPrice(latestStats.sell)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">
-              <abbr title="Instant buy minus instant sell (bid–ask width)">Bid–ask spread</abbr>
-            </div>
-            <div className="stat-value spread">{formatPrice(latestStats.spread)}</div>
-          </div>
-        </div>
-      )}
-
-      <div className="chart-toolbar">
-        <span className="chart-toolbar-label">{activeRange?.title ?? 'Range'}</span>
         <div className="time-range-selector" role="group" aria-label="Time range">
           {RANGE_OPTIONS.map((opt) => (
             <button
@@ -371,38 +296,115 @@ function PriceChart({ productId }: PriceChartProps) {
               className={`time-range-btn ${timeRange === opt.value ? 'active' : ''}`}
               onClick={() => setTimeRange(opt.value)}
               title={opt.title}
+              disabled={loading}
             >
-              {opt.short}
+              {opt.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="chart-wrapper">
-        {chartData && <Line data={chartData} options={options} />}
+      {/* Stat cards */}
+      {latestStats && !loading ? (
+        <div className="stat-cards-grid">
+          <StatCard
+            label="Instant Buy"
+            value={`${formatPriceFull(latestStats.buy)} ¢`}
+            colorClass="buy"
+            hint="Cost to buy one unit now (matches sell offers)"
+          />
+          <StatCard
+            label="Instant Sell"
+            value={`${formatPriceFull(latestStats.sell)} ¢`}
+            colorClass="sell"
+            hint="Coins received selling one unit now (matches buy orders)"
+          />
+          <StatCard
+            label="Bid–Ask Spread"
+            value={`${formatPriceFull(latestStats.spread)} ¢`}
+            colorClass="spread"
+            hint={`${latestStats.spreadPct.toFixed(2)}% of Instant Sell — wider spread = larger flip window`}
+          />
+        </div>
+      ) : loading && !history ? (
+        <div className="stat-cards-grid">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="stat-card stat-card--skeleton">
+              <div className="sk sk-stat-label" />
+              <div className="sk sk-stat-value" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Chart area */}
+      <div className="chart-area">
+        {loading ? (
+          <div className="chart-loading-state">
+            <div className="chart-spinner" />
+            <span>Loading {activeRange?.title.toLowerCase()}…</span>
+          </div>
+        ) : error ? (
+          <div className="chart-error-state">
+            <span className="chart-error-glyph">⚠</span>
+            <p>{error}</p>
+            <button
+              type="button"
+              className="refresh-btn"
+              onClick={() => setTimeRange(timeRange)}
+            >
+              Retry
+            </button>
+          </div>
+        ) : !hasData ? (
+          <div className="chart-empty-state">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden>
+              <rect x="4" y="36" width="8" height="8" rx="2" fill="currentColor" opacity="0.15" />
+              <rect x="14" y="28" width="8" height="16" rx="2" fill="currentColor" opacity="0.25" />
+              <rect x="24" y="20" width="8" height="24" rx="2" fill="currentColor" opacity="0.35" />
+              <rect x="34" y="12" width="8" height="32" rx="2" fill="currentColor" opacity="0.15" />
+              <path d="M6 10L20 6L32 14L44 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+            </svg>
+            <h3>No price data yet</h3>
+            <p>
+              {timeRange !== 'all'
+                ? `No snapshots in the last ${activeRange?.title.toLowerCase()}. Try selecting "All" to see any stored data.`
+                : `This item hasn't been recorded yet. Data backfills as the app polls Hypixel — check back shortly.`}
+            </p>
+            {timeRange !== 'all' && (
+              <button
+                type="button"
+                className="empty-cta-btn"
+                onClick={() => setTimeRange('all')}
+              >
+                View All History
+              </button>
+            )}
+          </div>
+        ) : isSparse ? (
+          <div className="chart-sparse-state">
+            <p className="sparse-note">
+              Only {orderedSnapshots.length} snapshot{orderedSnapshots.length !== 1 ? 's' : ''} stored —
+              the chart will fill in as the app polls Hypixel every 30 seconds.
+            </p>
+            {chartData && <div className="chart-wrapper"><Line data={chartData} options={chartOptions} /></div>}
+          </div>
+        ) : (
+          <div className="chart-wrapper">
+            {chartData && <Line data={chartData} options={chartOptions} />}
+          </div>
+        )}
       </div>
-      {orderedSnapshots.length >= 2 && (
-        <p className="chart-range-footnote">
-          Range: {formatAxisLabel(orderedSnapshots[0].timestamp, spanDays)} →{' '}
-          {formatAxisLabel(orderedSnapshots[orderedSnapshots.length - 1].timestamp, spanDays)} ·{' '}
-          {orderedSnapshots.length} points
-          {timeRange === 'all' ? (
-            <> — full stored history</>
-          ) : (
-            <>
-              {' '}
-              — filtered to {activeRange?.title ?? timeRange}; choose All for every snapshot in the database
-            </>
-          )}
-        </p>
+
+      {/* Footer meta */}
+      {hasData && !loading && orderedSnapshots.length >= 2 && (
+        <div className="chart-footnote">
+          <span className="chart-range-label">
+            {formatDate(orderedSnapshots[0].timestamp)} → {formatDate(orderedSnapshots[orderedSnapshots.length - 1].timestamp)}
+          </span>
+          <span className="chart-point-count">{orderedSnapshots.length} snapshots</span>
+        </div>
       )}
-      {timeRange === 'all' && spanDays > 1 && spanDays < 120 && (
-        <p className="chart-backfill-hint">
-          This is every snapshot in the database for this item. If you expected a multi-year series, run a
-          Coflnet history import first so older points are stored here.
-        </p>
-      )}
-      {dataSpanHint && <p className="chart-data-hint">{dataSpanHint}</p>}
     </div>
   );
 }

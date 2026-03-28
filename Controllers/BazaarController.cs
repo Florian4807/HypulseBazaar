@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SkyBazaar.Data;
@@ -164,6 +165,7 @@ public class BazaarController : ControllerBase
     /// Optional start/end (UTC) query params limit the range. Disable with Coflnet:EnableImport=false.
     /// </summary>
     [HttpPost("{productId}/import-coflnet-history")]
+    [EnableRateLimiting("ImportPolicy")]
     public async Task<ActionResult<CoflnetHistoryImportResultDto>> ImportCoflnetHistory(
         string productId,
         [FromQuery] DateTime? start,
@@ -173,6 +175,22 @@ public class BazaarController : ControllerBase
         if (!_configuration.GetValue("Coflnet:EnableImport", true))
         {
             return StatusCode(403, new { message = "Coflnet import is disabled (Coflnet:EnableImport)." });
+        }
+
+        var requireImportApiKey = _configuration.GetValue("Security:RequireImportApiKey", false);
+        if (requireImportApiKey)
+        {
+            var expected = _configuration["Security:ImportApiKey"];
+            if (string.IsNullOrWhiteSpace(expected))
+            {
+                return StatusCode(503, new { message = "Import API key required but not configured." });
+            }
+
+            if (!Request.Headers.TryGetValue("X-Admin-Key", out var provided) ||
+                !string.Equals(provided.ToString(), expected, StringComparison.Ordinal))
+            {
+                return Unauthorized(new { message = "Missing or invalid X-Admin-Key." });
+            }
         }
 
         try
