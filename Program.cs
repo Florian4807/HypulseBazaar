@@ -20,8 +20,8 @@ builder.Services.AddDbContext<SkyBazaarDbContext>(options =>
 builder.Services.AddDbContextFactory<SkyBazaarDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// Register the Hypixel API service
-builder.Services.AddSingleton<IHypixelApiService, HypixelApiService>();
+// Register the Hypixel API service with HttpClient factory
+builder.Services.AddHttpClient<IHypixelApiService, HypixelApiService>();
 
 // Register the background fetcher service
 builder.Services.AddHostedService<BazaarFetcherService>();
