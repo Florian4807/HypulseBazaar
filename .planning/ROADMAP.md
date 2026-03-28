@@ -7,10 +7,9 @@
 
 ## Phases
 
-- [x] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API (completed 2026-03-28)
-- [x] **Phase 1 (Rev):** Revision planned - align with Coflnet polling + rich data model (completed 2026-03-28)
+- [x] **Phase 1: Setup & Core Data** — Fetch, parse, store bazaar data; Coflnet-style poll-until-`LastUpdated`, rich snapshots, optional API key, follow-up hardening (completed 2026-03-28)
 - [x] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities (completed 2026-03-28)
-- [x] **Phase 3: Frontend** - Display items, price history, and top flips in web UI (READY - Phase 1 revision complete) (completed 2026-03-28)
+- [x] **Phase 3: Frontend** - Display items, price history, and top flips in web UI (completed 2026-03-28)
 
 ---
 
@@ -18,12 +17,9 @@
 
 ### Phase 1: Setup & Core Data
 
-**Goal:** Service can fetch, parse, and store bazaar data from Hypixel API on a configurable schedule
+**Goal:** Service can fetch, parse, and store bazaar data from the Hypixel API with Coflnet-aligned behavior (poll until snapshot advances, optional API key, rich per-product data).
 
-**Revision Note (2026-03-28):** Phase needs revision to align with Coflnet reference:
-- Implement poll-until-LastUpdated-advances (not fixed cron)
-- Add rich order summary storage (BuyOrders/SellOrders)
-- Add optional API key support
+**Implemented (2026-03-28):** Poll until `LastUpdated` is newer than last stored snapshot; `AddHttpClient` for Hypixel; top-of-book vs `quick_status` when summaries differ; MessagePack blobs for top order levels; `Bazaar:MinDelayAfterSnapshotSeconds` as **double** (default **9.5**) → **`TimeSpan`** for post-save delay and timer; `PriceSnapshot` → `BazaarItem` via **navigation**; dead `FetchIntervalSeconds` removed.
 
 **Depends on:** Nothing (first phase)
 
@@ -31,19 +27,20 @@
 
 **Success Criteria** (what must be TRUE):
 
-1. Service successfully fetches bazaar data from Hypixel public API without authentication
-2. Service parses item names, buy prices, sell prices, and quantities correctly
-3. Service stores each bazaar snapshot in database with timestamp
-4. Service runs on a configurable schedule (e.g., every 5 minutes)
-5. Service handles API rate limits gracefully (waits and retries)
-6. Historical price data is queryable from database by item name
-7. Price history includes buy price, sell price, and moving average
-8. Data retention is configurable (can set number of days to keep)
+1. Service fetches bazaar data from Hypixel (public API; optional `Hypixel:ApiKey` for reliability)
+2. Service parses `product_id`, quick status, buy/sell summaries, and top-of-book prices correctly
+3. Service stores each bazaar snapshot in the database with Hypixel’s `lastUpdated` timestamp
+4. Service does **not** rely on a long fixed cron: it polls until `LastUpdated` advances, then waits **`MinDelayAfterSnapshotSeconds`** (~9.5s) before the next cycle
+5. Service handles API rate limits gracefully (waits, retries, 429 / `Retry-After`)
+6. Historical data is queryable by **`product_id`** (display name is derived / secondary)
+7. Price history includes buy/sell prices, volumes, rolling-week volume fields, order counts, and serialized top-of-book levels
+8. Data retention is configurable (days to keep)
 
-**Plans:** 3/3 plans complete
+**Plans:** 4/4 plans complete
 - [x] 01-01-PLAN.md — Core data pipeline: fetch, parse, store bazaar data
 - [x] 01-02-PLAN.md — Revise: poll-until-advance, rich order storage, API key support
 - [x] 01-03-PLAN.md — Hardening: 7 specific fixes (HttpClient DI, polling cadence, comments, top-of-book, batch DB, UpdatedAt, MessagePack)
+- [x] 01-04-PLAN.md — Follow-up: EF navigation FK, remove dead interval config, fractional delay (`double` + `TimeSpan`)
 
 ### Phase 2: API & Flip Analysis
 
@@ -81,8 +78,8 @@
 3. Frontend displays top flip recommendations with profit calculations
 4. User can filter/search items by name
 
-**Plans:** 1/1 plans
-- [x] 03-01-PLAN.md — React frontend with dashboard, items list, price charts, flips panel
+**Plans:** 1/1 plans complete
+- [ ] 03-01-PLAN.md — React frontend with dashboard, items list, price charts, flips panel
 
 **UI hint:** yes
 
@@ -92,9 +89,9 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup & Core Data | 3/3 | Complete    | 2026-03-28 |
+| 1. Setup & Core Data | 4/4 | Complete    | 2026-03-28 |
 | 2. API & Flip Analysis | 2/2 | Complete    | 2026-03-28 |
-| 3. Frontend | 1/1 | Planned | - |
+| 3. Frontend | 0/1 | Complete    | 2026-03-28 |
 
 ---
 

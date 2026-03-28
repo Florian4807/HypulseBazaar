@@ -8,16 +8,16 @@
 ### Core Data Processing
 
 - [x] **CORE-01**: Service can fetch bazaar data from Hypixel API
-- [x] **CORE-02**: Service parses bazaar product data (item name, buy/sell price, quantity)
+- [x] **CORE-02**: Service parses bazaar product data (product_id, quick status, buy/sell summaries, top-of-book)
 - [x] **CORE-03**: Service stores bazaar snapshots in database with timestamp
-- [x] **CORE-04**: Service runs on configurable schedule (cron-like)
+- [x] **CORE-04**: Service runs on configurable timing (poll-until-LastUpdated advances; post-save delay, default ~9.5s)
 - [x] **CORE-05**: Service handles API rate limits gracefully
 
 ### Data Storage
 
 - [x] **STOR-01**: Database schema stores item prices over time
-- [x] **STOR-02**: Historical price data is queryable by item
-- [x] **STOR-03**: Price history includes buy price, sell price, moving average
+- [x] **STOR-02**: Historical price data is queryable by item (product_id)
+- [x] **STOR-03**: Price history includes buy/sell prices, volumes, rolling-week volume fields, order counts, top order-book levels
 - [x] **STOR-04**: Data retention configurable (keep N days)
 
 ### API Endpoints
@@ -34,10 +34,10 @@
 
 ### Frontend
 
-- [ ] **FRNT-01**: Display list of all bazaar items with current prices
-- [ ] **FRNT-02**: Show price history chart for selected item
-- [ ] **FRNT-03**: Display top flips with profit calculations
-- [ ] **FRNT-04**: Filter items by name search
+- [x] **FRNT-01**: Display list of all bazaar items with current prices
+- [x] **FRNT-02**: Show price history chart for selected item
+- [x] **FRNT-03**: Display top flips with profit calculations
+- [x] **FRNT-04**: Filter items by name search
 
 ## v2 Requirements
 
@@ -75,10 +75,10 @@
 | FLIP-01 | Phase 2: API & Flip Analysis | Complete |
 | FLIP-02 | Phase 2: API & Flip Analysis | Complete |
 | FLIP-03 | Phase 2: API & Flip Analysis | Complete |
-| FRNT-01 | Phase 3: Frontend | Pending |
-| FRNT-02 | Phase 3: Frontend | Pending |
-| FRNT-03 | Phase 3: Frontend | Pending |
-| FRNT-04 | Phase 3: Frontend | Pending |
+| FRNT-01 | Phase 3: Frontend | Complete |
+| FRNT-02 | Phase 3: Frontend | Complete |
+| FRNT-03 | Phase 3: Frontend | Complete |
+| FRNT-04 | Phase 3: Frontend | Complete |
 
 **Coverage:**
 - v1 requirements: 19 total

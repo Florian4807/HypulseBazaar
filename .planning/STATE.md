@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-last_updated: "2026-03-28T06:28:58.993Z"
+status: Milestone complete
+last_updated: "2026-03-28T06:48:17.367Z"
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 5
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # State: SkyBazaar
@@ -22,7 +22,7 @@ progress:
 
 ## Current Position
 
-Phase: 02
+Phase: 3
 Plan: Not started
 | Field | Value |
 |-------|-------|
@@ -36,9 +36,9 @@ Plan: Not started
 | Metric | Value |
 |--------|-------|
 | Requirements (v1) | 19 |
-| Requirements completed | 0 |
-| Phase progress | 0/3 phases |
-| Phase 01-setup-core-data P01 | 5 | 4 tasks | 9 files |
+| Requirements completed | 15/19 (frontend pending) |
+| Phase progress | 2/3 phases complete (Phase 3 in progress) |
+| Phase 01-setup-core-data P01 | 5 | 4 tasks | 10 files |
 | Phase 02-api-flip-analysis P01 | 2 | 3 tasks | 3 files |
 | Phase 02-api-flip-analysis P02 | 3 | 3 tasks | 4 files |
 | Phase 01-setup-core-data P02 | 5 | 4 tasks | 6 files |
@@ -53,12 +53,14 @@ Plan: Not started
 - Local database (PostgreSQL/SQLite) for historical data storage
 - [Phase 01-setup-core-data]: Using SQLite for local database (simpler than PostgreSQL for standalone)
 - [Phase 01-setup-core-data]: Using poll-until-advance instead of fixed cron interval - mirrors Coflnet behavior
+- [Phase 01-setup-core-data]: Post-save + timer delay uses **double** `MinDelayAfterSnapshotSeconds` (default 9.5) as **TimeSpan** — fractional seconds match config and Coflnet ~9.5s cadence
+- [Phase 03]: Frontend using React with Vite for SPA
 
 ### Open Questions
 
-- Which specific database? (PostgreSQL vs SQLite)
-- Exact scheduling interval for fetching data?
-- Frontend framework choice? (Blazor, React, Vue?)
+- Which specific database? (PostgreSQL vs SQLite) — **SQLite in use** for standalone v1
+- ~~Exact scheduling interval for fetching data?~~ — **Resolved:** `Bazaar:MinDelayAfterSnapshotSeconds` (double, default **9.5s**) as `TimeSpan` after each stored snapshot; poll-until-`LastUpdated` for ingest
+- Frontend framework choice? (Blazor, React, Vue?) — **React** per Phase 3 plan
 
 ### Blockers
 
@@ -68,7 +70,7 @@ Plan: Not started
 
 **Previous sessions:** None yet - project just initialized
 
-**Next action:** `/gsd-plan-phase 1` to plan the setup and core data phase
+**Next action:** Continue Phase 3 frontend or run `/gsd:next` to sync milestone state after planning edits
 
 ---
 
