@@ -8,7 +8,7 @@
 ## Phases
 
 - [x] **Phase 1: Setup & Core Data** - Fetch, parse, and store bazaar data from Hypixel API (completed 2026-03-28)
-- [ ] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities
+- [x] **Phase 2: API & Flip Analysis** - Expose data via API endpoints and calculate flip opportunities (completed 2026-03-28)
 - [ ] **Phase 3: Frontend** - Display items, price history, and top flips in web UI
 
 ---
@@ -54,7 +54,7 @@
 5. API returns items sorted by best profit margins
 6. Top flips endpoint returns recommended items with profit potential
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 - [x] 02-01-PLAN.md — REST API endpoints for bazaar data
 - [x] 02-02-PLAN.md — Flip detection service and endpoints
 

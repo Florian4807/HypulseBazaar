@@ -28,9 +28,9 @@
 
 ### Flip Detection
 
-- [ ] **FLIP-01**: Calculate profit margin between buy and sell price
-- [ ] **FLIP-02**: Identify items with best profit margins
-- [ ] **FLIP-03**: Show flip recommendations sorted by profit potential
+- [x] **FLIP-01**: Calculate profit margin between buy and sell price
+- [x] **FLIP-02**: Identify items with best profit margins
+- [x] **FLIP-03**: Show flip recommendations sorted by profit potential
 
 ### Frontend
 
@@ -72,9 +72,9 @@
 | API-01 | Phase 2: API & Flip Analysis | Complete |
 | API-02 | Phase 2: API & Flip Analysis | Complete |
 | API-03 | Phase 2: API & Flip Analysis | Complete |
-| FLIP-01 | Phase 2: API & Flip Analysis | Pending |
-| FLIP-02 | Phase 2: API & Flip Analysis | Pending |
-| FLIP-03 | Phase 2: API & Flip Analysis | Pending |
+| FLIP-01 | Phase 2: API & Flip Analysis | Complete |
+| FLIP-02 | Phase 2: API & Flip Analysis | Complete |
+| FLIP-03 | Phase 2: API & Flip Analysis | Complete |
 | FRNT-01 | Phase 3: Frontend | Pending |
 | FRNT-02 | Phase 3: Frontend | Pending |
 | FRNT-03 | Phase 3: Frontend | Pending |
