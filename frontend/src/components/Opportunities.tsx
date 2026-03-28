@@ -8,20 +8,33 @@ interface OpportunitiesProps {
   onUpdated?: (d: Date) => void;
 }
 
-type SortKey = 'name' | 'buyPrice' | 'sellPrice' | 'profitMargin' | 'profitPercentage' | 'recommendationScore';
+type SortKey =
+  | 'name'
+  | 'coinsPerHour'
+  | 'buyPrice'
+  | 'oneHourInstabuys'
+  | 'sellPrice'
+  | 'oneHourInstasells'
+  | 'profitMargin'
+  | 'profitPercentage';
 type SortDir = 'asc' | 'desc';
 
-function fmt(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
-  if (n >= 1_000_000)     return `${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000)         return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+function fmtCoins(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-function spreadTier(pct: number): 'high' | 'med' | 'low' {
-  if (pct >= 5) return 'high';
-  if (pct >= 2) return 'med';
-  return 'low';
+function itemIcon(name?: string): string {
+  const n = (name ?? '').toLowerCase();
+  if (n.includes('cookie')) return 'cookie';
+  if (n.includes('diamond') || n.includes('gem')) return 'diamond';
+  if (n.includes('enchant')) return 'auto_fix_high';
+  if (n.includes('snow') || n.includes('ice')) return 'ac_unit';
+  if (n.includes('wheat') || n.includes('seed')) return 'grass';
+  if (n.includes('coal') || n.includes('charcoal')) return 'dark_mode';
+  if (n.includes('sword')) return 'swords';
+  if (n.includes('slime')) return 'bubble_chart';
+  if (n.includes('fish')) return 'set_meal';
+  return 'inventory_2';
 }
 
 const TIER_CLASSES = {
@@ -31,21 +44,42 @@ const TIER_CLASSES = {
 };
 
 const RANK_CLASSES = ['text-primary bg-primary/10', 'text-on-surface-variant/70 bg-white/5', 'text-on-surface-variant/50 bg-white/5'];
+const OPPORTUNITIES_FETCH_COUNT = 5000;
+const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
+  { value: 'coinsPerHour', label: 'Coins per Hour' },
+  { value: 'buyPrice', label: 'Buy Price' },
+  { value: 'oneHourInstabuys', label: 'One-Hour Instabuys' },
+  { value: 'sellPrice', label: 'Sell Price' },
+  { value: 'oneHourInstasells', label: 'One-Hour Instasells' },
+  { value: 'profitMargin', label: 'Margin (coins)' },
+  { value: 'profitPercentage', label: 'Margin (%)' },
+];
 
 export default function Opportunities({ onItemSelect, searchQuery = '', onUpdated }: OpportunitiesProps) {
-  const cached = peekTopFlipsCache(100, 0);
+  const cached = peekTopFlipsCache(OPPORTUNITIES_FETCH_COUNT, 0);
   const [flips, setFlips]     = useState<FlipRecommendation[]>(cached?.flips ?? []);
   const [loading, setLoading] = useState(!cached);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(
     cached ? new Date(cached.generatedAt) : null
   );
-  const [sortKey, setSortKey] = useState<SortKey>('profitPercentage');
+  const [sortKey, setSortKey] = useState<SortKey>('coinsPerHour');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const minTradablePerHour = 0.5;
+
+  const primaryOrder: SortKey[] = [
+    'coinsPerHour',
+    'buyPrice',
+    'oneHourInstabuys',
+    'sellPrice',
+    'oneHourInstasells',
+    'profitMargin',
+    'profitPercentage',
+  ];
 
   async function load(forceRefresh = false) {
     if (forceRefresh) setLoading(true);
     try {
-      const res = await getTopFlips(100, 0, forceRefresh);
+      const res = await getTopFlips(OPPORTUNITIES_FETCH_COUNT, 0, forceRefresh);
       setFlips(res.flips);
       const d = new Date(res.generatedAt);
       setLastUpdated(d);
@@ -63,54 +97,52 @@ export default function Opportunities({ onItemSelect, searchQuery = '', onUpdate
     return () => clearInterval(id);
   }, []);
 
-  function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc'); }
-  }
-
   const sorted = useMemo(() => {
-    let src = flips;
+    let src = flips.filter(f => f.tradablePerHour >= minTradablePerHour && f.coinsPerHour > 0);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      src = flips.filter(f => f.productName.toLowerCase().includes(q) || f.productId.toLowerCase().includes(q));
+      src = flips.filter(f => (f.productName ?? '').toLowerCase().includes(q) || f.productId.toLowerCase().includes(q));
+      src = src.filter(f => f.tradablePerHour >= minTradablePerHour && f.coinsPerHour > 0);
     }
-    return [...src].sort((a, b) => {
-      let av: number | string, bv: number | string;
-      switch (sortKey) {
-        case 'name':              av = a.productName;       bv = b.productName;       break;
-        case 'buyPrice':          av = a.buyPrice;          bv = b.buyPrice;          break;
-        case 'sellPrice':         av = a.sellPrice;         bv = b.sellPrice;         break;
-        case 'profitMargin':      av = a.profitMargin;      bv = b.profitMargin;      break;
-        case 'profitPercentage':  av = a.profitPercentage;  bv = b.profitPercentage;  break;
-        case 'recommendationScore': av = a.recommendationScore; bv = b.recommendationScore; break;
-        default: return 0;
+
+    const orderedKeys: SortKey[] = sortKey === 'name'
+      ? ['name', ...primaryOrder.filter(k => k !== 'name')]
+      : [sortKey, ...primaryOrder.filter(k => k !== sortKey)];
+
+    const getValue = (flip: FlipRecommendation, key: SortKey): number | string => {
+      switch (key) {
+        case 'name': return flip.productName;
+        case 'coinsPerHour': return flip.coinsPerHour;
+        case 'buyPrice': return flip.buyPrice;
+        case 'oneHourInstabuys': return flip.oneHourInstabuys;
+        case 'sellPrice': return flip.sellPrice;
+        case 'oneHourInstasells': return flip.oneHourInstasells;
+        case 'profitMargin': return flip.profitMargin;
+        case 'profitPercentage': return flip.profitPercentage;
       }
-      if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av);
-      return sortDir === 'asc' ? av - (bv as number) : (bv as number) - av;
+    };
+
+    return [...src].sort((a, b) => {
+      for (const key of orderedKeys) {
+        const av = getValue(a, key);
+        const bv = getValue(b, key);
+        const direction: SortDir = key === sortKey ? sortDir : 'desc';
+
+        if (typeof av === 'string' && typeof bv === 'string') {
+          const cmp = av.localeCompare(bv);
+          if (cmp !== 0) return direction === 'asc' ? cmp : -cmp;
+          continue;
+        }
+
+        const na = Number(av);
+        const nb = Number(bv);
+        if (na === nb) continue;
+        return direction === 'asc' ? na - nb : nb - na;
+      }
+
+      return 0;
     });
   }, [flips, searchQuery, sortKey, sortDir]);
-
-  function Th({ col, label, title, right }: { col: SortKey; label: string; title?: string; right?: boolean }) {
-    const active = sortKey === col;
-    return (
-      <th
-        className={[
-          'px-4 py-3 text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none',
-          'transition-colors duration-150',
-          right ? 'text-right' : 'text-left',
-          active ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface',
-        ].join(' ')}
-        onClick={() => handleSort(col)}
-        title={title}
-        aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-      >
-        {label}
-        <span className={`ml-1 text-[0.6em] ${active ? 'opacity-90' : 'opacity-25'}`}>
-          {active ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
-        </span>
-      </th>
-    );
-  }
 
   return (
     <div className="p-8">
@@ -123,6 +155,28 @@ export default function Opportunities({ onItemSelect, searchQuery = '', onUpdate
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold">Sort Key</label>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              className="bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs px-2 py-1 rounded-sm"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortDir((d) => d === 'asc' ? 'desc' : 'asc')}
+              className="bg-surface-container-high border border-outline-variant/20 hover:border-primary/30 text-on-surface px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all"
+              title="Toggle sort direction"
+            >
+              {sortDir === 'asc' ? 'ASC' : 'DESC'}
+            </button>
+          </div>
           {lastUpdated && (
             <div className="flex items-center gap-2 text-[10px] font-mono text-stone-500">
               <span className="w-1.5 h-1.5 rounded-full bg-tertiary inline-block animate-pulse" />
@@ -142,23 +196,24 @@ export default function Opportunities({ onItemSelect, searchQuery = '', onUpdate
 
       {/* Table */}
       <div className="bg-surface-container overflow-x-auto">
-        <table className="w-full border-collapse text-sm min-w-[800px]">
+        <table className="w-full border-collapse text-sm min-w-[1150px]">
           <thead>
             <tr className="bg-surface-container-high">
               <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant w-12">#</th>
-              <Th col="name"              label="Item"        />
-              <Th col="buyPrice"          label="Instant Buy"  title="Cost to buy one unit now"     right />
-              <Th col="sellPrice"         label="Instant Sell" title="Coins received selling one unit" right />
-              <Th col="profitMargin"      label="Spread"       title="Buy − Sell margin per unit"    right />
-              <Th col="profitPercentage"  label="Spread %"     title="Spread as % of Instant Sell"   right />
-              <Th col="recommendationScore" label="Score"      title="Overall recommendation score"  right />
+              <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Item</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Buy Price</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">One-Hour Instabuys</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Sell Price</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">One-Hour Instasells</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Margin</th>
+              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Coins per Hour</th>
             </tr>
           </thead>
           <tbody>
             {loading && flips.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <tr key={i} className="border-t border-outline-variant/5">
-                  {[40, 160, 80, 80, 80, 70, 50].map((w, j) => (
+                  {[40, 200, 90, 90, 90, 90, 90, 100].map((w, j) => (
                     <td key={j} className="px-4 py-3">
                       <div className="sk h-3" style={{ width: w }} />
                     </td>
@@ -167,13 +222,12 @@ export default function Opportunities({ onItemSelect, searchQuery = '', onUpdate
               ))
             ) : sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-16 text-center text-stone-600 text-xs uppercase tracking-widest">
+                <td colSpan={8} className="px-4 py-16 text-center text-stone-600 text-xs uppercase tracking-widest">
                   No opportunities found
                 </td>
               </tr>
             ) : sorted.map((flip, idx) => {
-              const tier = spreadTier(flip.profitPercentage);
-              const scoreClass = flip.recommendationScore >= 7 ? TIER_CLASSES.high : flip.recommendationScore >= 4 ? TIER_CLASSES.med : TIER_CLASSES.low;
+              const scoreClass = flip.coinsPerHour >= 50_000_000 ? TIER_CLASSES.high : flip.coinsPerHour >= 10_000_000 ? TIER_CLASSES.med : TIER_CLASSES.low;
               const rankClass = RANK_CLASSES[Math.min(idx, 2)];
               return (
                 <tr
@@ -188,20 +242,26 @@ export default function Opportunities({ onItemSelect, searchQuery = '', onUpdate
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-bold text-on-surface group-hover:text-primary transition-colors">{flip.productName}</div>
-                    <div className="text-[10px] text-stone-600 font-mono mt-0.5">{flip.productId}</div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-surface-container-lowest border border-outline-variant/20 rounded-sm flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary text-lg" aria-hidden>{itemIcon(flip.productName)}</span>
+                      </div>
+                      <div>
+                        <div className="font-bold text-on-surface group-hover:text-primary transition-colors">
+                          {flip.productName || flip.productId}
+                        </div>
+                        <div className="text-[10px] text-stone-600 font-mono mt-0.5">{flip.productId}</div>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-primary">{fmt(flip.buyPrice)}</td>
-                  <td className="px-4 py-3 text-right font-mono text-secondary">{fmt(flip.sellPrice)}</td>
-                  <td className="px-4 py-3 text-right font-mono text-on-surface">+{fmt(flip.profitMargin)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={`inline-block px-2 py-0.5 text-[10px] font-mono font-bold rounded-sm ${TIER_CLASSES[tier]}`}>
-                      +{flip.profitPercentage.toFixed(2)}%
-                    </span>
-                  </td>
+                  <td className="px-4 py-3 text-right font-mono text-primary">{fmtCoins(flip.buyPrice)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-on-surface">{flip.oneHourInstabuys.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-secondary">{fmtCoins(flip.sellPrice)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-on-surface">{flip.oneHourInstasells.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-on-surface">+{fmtCoins(flip.profitMargin)}</td>
                   <td className="px-4 py-3 text-right">
                     <span className={`inline-block px-2 py-0.5 text-[10px] font-mono font-bold rounded-sm ${scoreClass}`}>
-                      {flip.recommendationScore.toFixed(1)}
+                      {fmtCoins(flip.coinsPerHour)}
                     </span>
                   </td>
                 </tr>

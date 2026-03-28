@@ -64,6 +64,68 @@ export function peekTopFlipsCache(count: number = 50, minProfitPercent: number =
   return getCachedValue<FlipsResponse>(`flips:${count}:${minProfitPercent}`);
 }
 
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function toTitleCaseFromProductId(productId: string): string {
+  return productId
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function normalizeProductName(productId: string, rawName?: string): string {
+  if (!productId) return rawName?.trim() || 'Unknown Item';
+
+  // Hypixel essence IDs are ESSENCE_<TYPE>; preferred display is "<Type> Essence".
+  if (productId.startsWith('ESSENCE_')) {
+    const essenceType = productId.replace('ESSENCE_', '');
+    const typed = toTitleCaseFromProductId(essenceType);
+    return typed ? `${typed} Essence` : 'Essence';
+  }
+
+  const trimmed = rawName?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : toTitleCaseFromProductId(productId);
+}
+
+function normalizeFlip(raw: Partial<FlipRecommendation>): FlipRecommendation {
+  const productId = raw.productId ?? '';
+  const buyPrice = toNumber(raw.buyPrice);
+  const sellPrice = toNumber(raw.sellPrice);
+  const margin = toNumber(raw.profitMargin, buyPrice - sellPrice);
+  const buyVol = toNumber(raw.buyVolume);
+  const sellVol = toNumber(raw.sellVolume);
+
+  // Hypixel quick_status volumes are rolling 24h totals.
+  const derivedBuysPerHour = buyVol / 24;
+  const derivedSellsPerHour = sellVol / 24;
+  const oneHourInstabuys = toNumber(raw.oneHourInstabuys, derivedBuysPerHour);
+  const oneHourInstasells = toNumber(raw.oneHourInstasells, derivedSellsPerHour);
+  const tradablePerHour = toNumber(raw.tradablePerHour, Math.min(oneHourInstabuys, oneHourInstasells));
+  const coinsPerHour = toNumber(raw.coinsPerHour, margin * tradablePerHour);
+
+  return {
+    productId,
+    productName: normalizeProductName(productId, raw.productName),
+    buyPrice,
+    sellPrice,
+    profitMargin: margin,
+    profitPercentage: toNumber(raw.profitPercentage),
+    volumeScore: toNumber(raw.volumeScore),
+    oneHourInstabuys,
+    oneHourInstasells,
+    tradablePerHour,
+    coinsPerHour,
+    recommendationScore: toNumber(raw.recommendationScore),
+    buyVolume: buyVol,
+    sellVolume: sellVol,
+    lastUpdated: raw.lastUpdated ?? new Date(0).toISOString(),
+  };
+}
+
 export async function getBazaar(forceRefresh = false): Promise<BazaarItem[]> {
   return getOrFetch(
     'bazaar',
@@ -106,7 +168,10 @@ export async function getTopFlips(
       const response = await api.get<FlipsResponse>('/flips', {
         params: { count, minProfitPercent },
       });
-      return response.data;
+      return {
+        ...response.data,
+        flips: (response.data.flips ?? []).map(normalizeFlip),
+      };
     },
     forceRefresh
   );

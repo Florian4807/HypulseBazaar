@@ -117,8 +117,8 @@ export default function HypulseLayout({
         <footer className="py-4 px-8 flex justify-between items-center border-t border-stone-800/20 bg-stone-950">
           <p className="text-[10px] uppercase tracking-tighter text-stone-600">
             {lastUpdated
-              ? `Last Updated: ${lastUpdated.toLocaleTimeString()} | SkyBazaar v1.0`
-              : 'SkyBazaar — Hypixel Bazaar Tracker'}
+              ? `Last Updated: ${lastUpdated.toLocaleTimeString()} | HypulseBazaar v1.0`
+              : 'Hypulse Bazaar Tracker'}
           </p>
           <div className="flex space-x-6">
             <span className="text-[10px] uppercase tracking-tighter text-stone-600">Hypixel SkyBlock</span>

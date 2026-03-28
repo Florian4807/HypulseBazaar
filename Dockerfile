@@ -16,5 +16,5 @@ ENV DOTNET_EnableDiagnostics=0
 COPY --from=build /app/publish ./
 
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "SkyBazaar.dll"]
+ENTRYPOINT ["dotnet", "HypulseBazaar.dll"]
 

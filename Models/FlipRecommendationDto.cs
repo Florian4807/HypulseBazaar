@@ -43,9 +43,29 @@ public class FlipRecommendationDto
     public long VolumeScore { get; set; }
 
     /// <summary>
-    /// Weighted score: <see cref="ProfitMargin"/> × log10(volume + 1).
+    /// Weighted score favoring profitable and liquid flips (used for ranking).
     /// </summary>
     public decimal RecommendationScore { get; set; }
+
+    /// <summary>
+    /// Estimated one-hour instant buys (derived from weekly buy volume / 168).
+    /// </summary>
+    public decimal OneHourInstabuys { get; set; }
+
+    /// <summary>
+    /// Estimated one-hour instant sells (derived from weekly sell volume / 168).
+    /// </summary>
+    public decimal OneHourInstasells { get; set; }
+
+    /// <summary>
+    /// Conservative fill-rate estimate per hour (min of buy/sell instant rates).
+    /// </summary>
+    public decimal TradablePerHour { get; set; }
+
+    /// <summary>
+    /// Conservative profit throughput estimate: margin × tradable-per-hour.
+    /// </summary>
+    public decimal CoinsPerHour { get; set; }
 
     /// <summary>
     /// Buy volume in the last 24 hours.

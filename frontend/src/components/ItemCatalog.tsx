@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { getBazaar, getTopFlips, peekBazaarCache, peekTopFlipsCache } from '../services/api';
 import type { BazaarItem, FlipRecommendation } from '../types/api';
 
@@ -7,6 +7,11 @@ interface ItemCatalogProps {
   searchQuery: string;
   onUpdated?: (d: Date) => void;
 }
+
+const INITIAL_GRID_ITEMS = 80;
+const INITIAL_LIST_ITEMS = 120;
+const LOAD_MORE_GRID_ITEMS = 80;
+const LOAD_MORE_LIST_ITEMS = 120;
 
 function fmt(n: number): string {
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
@@ -154,6 +159,8 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
   const [flips, setFlips]   = useState<FlipRecommendation[]>(cachedFlips?.flips ?? []);
   const [loading, setLoading] = useState(!(cachedBazaar && cachedFlips));
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [visibleCount, setVisibleCount] = useState(INITIAL_GRID_ITEMS);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     let alive = true;
@@ -185,12 +192,24 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
   }, [flips]);
 
   const filtered = useMemo(() => {
-    if (!searchQuery) return items;
-    const q = searchQuery.toLowerCase();
+    if (!deferredSearchQuery) return items;
+    const q = deferredSearchQuery.toLowerCase();
     return items.filter(
       item => (item.name ?? '').toLowerCase().includes(q) || item.productId.toLowerCase().includes(q)
     );
-  }, [items, searchQuery]);
+  }, [items, deferredSearchQuery]);
+
+  useEffect(() => {
+    setVisibleCount(viewMode === 'grid' ? INITIAL_GRID_ITEMS : INITIAL_LIST_ITEMS);
+  }, [viewMode, deferredSearchQuery]);
+
+  const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const canLoadMore = visibleCount < filtered.length;
+  const loadMoreStep = viewMode === 'grid' ? LOAD_MORE_GRID_ITEMS : LOAD_MORE_LIST_ITEMS;
+
+  function handleLoadMore() {
+    setVisibleCount((current) => Math.min(current + loadMoreStep, filtered.length));
+  }
 
   const totalVolume = useMemo(
     () => items.reduce((sum, i) => sum + i.buyVolume, 0),
@@ -198,7 +217,7 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
   );
 
   const topInsight = useMemo(
-    () => [...flips].sort((a, b) => b.profitPercentage - a.profitPercentage)[0],
+    () => [...flips].sort((a, b) => b.coinsPerHour - a.coinsPerHour)[0],
     [flips]
   );
   const netVol = useMemo(() => {
@@ -249,7 +268,7 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {loading
             ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
-            : filtered.map(item => (
+            : visibleItems.map(item => (
               <ItemCard
                 key={item.productId}
                 item={item}
@@ -288,7 +307,7 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
                     ))}
                   </tr>
                 ))
-              ) : filtered.map(item => {
+              ) : visibleItems.map(item => {
                 const spreadPct = item.currentSellPrice > 0
                   ? ((item.currentBuyPrice - item.currentSellPrice) / item.currentSellPrice) * 100 : 0;
                 return (
@@ -319,6 +338,23 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
         </div>
       )}
 
+      {!loading && filtered.length > 0 && (
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-widest text-stone-600">
+            Showing {visibleItems.length} of {filtered.length} items
+          </p>
+          {canLoadMore && (
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              className="bg-surface-container-high border border-outline-variant/20 hover:border-primary/30 text-on-surface px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95"
+            >
+              Load More
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Market Insight + Volatility */}
       {!loading && topInsight && (
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -327,8 +363,10 @@ export default function ItemCatalog({ onItemSelect, searchQuery, onUpdated }: It
               <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Market Insight</span>
               <h2 className="text-2xl font-headline font-bold mt-2">Bazaar Flipping Opportunity</h2>
               <p className="text-on-surface-variant text-sm mt-2 max-w-md">
-                <strong className="text-on-surface">{topInsight.productName}</strong> is currently showing a{' '}
-                <span className="text-tertiary font-bold">+{topInsight.profitPercentage.toFixed(1)}% margin</span>.
+                <strong className="text-on-surface">{topInsight.productName}</strong> is currently estimated at{' '}
+                <span className="text-tertiary font-bold">{fmt(topInsight.coinsPerHour)} coins/hour</span>{' '}
+                based on a conservative fill rate of{' '}
+                <span className="text-on-surface font-mono">{topInsight.tradablePerHour.toFixed(1)}/hr</span>.
                 Buy at{' '}
                 <span className="text-on-surface font-mono">{fmt(topInsight.buyPrice)}</span>, sell at{' '}
                 <span className="text-on-surface font-mono">{fmt(topInsight.sellPrice)}</span>{' '}

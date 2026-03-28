@@ -33,6 +33,10 @@ export interface FlipRecommendation {
   profitMargin: number;
   profitPercentage: number;
   volumeScore: number;
+  oneHourInstabuys: number;
+  oneHourInstasells: number;
+  tradablePerHour: number;
+  coinsPerHour: number;
   recommendationScore: number;
   /** Weekly buy volume (demand) — units placed as buy orders */
   buyVolume: number;

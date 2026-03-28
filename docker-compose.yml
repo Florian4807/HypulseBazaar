@@ -31,7 +31,7 @@ services:
       Worker__Enabled: "false"
       Security__RequireImportApiKey: "true"
       Security__ImportApiKey: change-this-admin-key
-      Coflnet__EnableImport: "true"
+      Coflnet__EnableImport: "false"
       ImportRateLimit__PermitLimit: "60"
       ImportRateLimit__WindowSeconds: "60"
       ImportRateLimit__QueueLimit: "0"

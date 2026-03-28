@@ -14,8 +14,8 @@ function fmt(n: number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 1 });
 }
 
-function itemIcon(name: string): string {
-  const n = name.toLowerCase();
+function itemIcon(name?: string): string {
+  const n = (name ?? '').toLowerCase();
   if (n.includes('cookie'))                           return 'cookie';
   if (n.includes('diamond') || n.includes('gem'))    return 'diamond';
   if (n.includes('enchant'))                         return 'auto_fix_high';
@@ -89,8 +89,9 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  const byPercent   = useMemo(() => [...flips].sort((a, b) => b.profitPercentage - a.profitPercentage).slice(0, 3), [flips]);
+  const byCoinsHour = useMemo(() => [...flips].sort((a, b) => b.coinsPerHour - a.coinsPerHour).slice(0, 3), [flips]);
   const byMargin    = useMemo(() => [...flips].sort((a, b) => b.profitMargin      - a.profitMargin).slice(0, 3),     [flips]);
+  const bySpreadPct = useMemo(() => [...flips].sort((a, b) => b.profitPercentage - a.profitPercentage).slice(0, 3), [flips]);
   const byVolume    = useMemo(() => [...items].sort((a, b) => b.buyVolume         - a.buyVolume).slice(0, 3),         [items]);
   const marketFavs  = useMemo(() => [...items].sort((a, b) => b.buyVolume         - a.buyVolume).slice(0, 5),         [items]);
   const maxVol      = useMemo(() => marketFavs[0]?.buyVolume || 1, [marketFavs]);
@@ -100,15 +101,15 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
       {/* Top row: 3 panels */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* ── Top Crafts (by %) ────────────────────────── */}
+        {/* ── Top Crafts (by coins/hr) ─────────────────── */}
         <div className="lg:col-span-4 bg-surface-container p-1 flex flex-col">
-          <PanelHeader title="Top Crafts" icon="construction" borderColor="border-secondary" />
+          <PanelHeader title="Top Crafts (Coins/Hr)" icon="construction" borderColor="border-secondary" />
           <div className="space-y-px mt-1">
             {loading ? (
               [0, 1, 2].map(i => <SkeletonRow key={i} />)
-            ) : byPercent.length === 0 ? (
+            ) : byCoinsHour.length === 0 ? (
               <div className="p-8 text-center text-stone-600 text-xs uppercase tracking-widest">No data</div>
-            ) : byPercent.map(flip => (
+            ) : byCoinsHour.map(flip => (
               <button
                 key={flip.productId}
                 type="button"
@@ -122,11 +123,15 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
                     </span>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-bold text-on-surface truncate max-w-[140px]">{flip.productName}</p>
-                    <p className="text-[10px] text-stone-500 font-mono">Spread: {fmt(flip.profitMargin)}</p>
+                    <p className="text-sm font-bold text-on-surface truncate max-w-[140px]">
+                      {flip.productName || flip.productId}
+                    </p>
+                    <p className="text-[10px] text-stone-500 font-mono">
+                      Fill: {flip.tradablePerHour.toFixed(1)}/hr
+                    </p>
                   </div>
                 </div>
-                <span className="text-tertiary font-mono text-xs font-bold">+{flip.profitPercentage.toFixed(1)}%</span>
+                <span className="text-tertiary font-mono text-xs font-bold">{fmt(flip.coinsPerHour)}/hr</span>
               </button>
             ))}
           </div>
@@ -148,7 +153,9 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
                 className="w-full flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-highest transition-colors"
               >
                 <div className="text-left">
-                  <p className="text-sm font-bold text-on-surface truncate max-w-[200px]">{flip.productName}</p>
+                  <p className="text-sm font-bold text-on-surface truncate max-w-[200px]">
+                    {flip.productName || flip.productId}
+                  </p>
                   <p className="text-[10px] text-stone-500">
                     Buy: {fmt(flip.buyPrice)} | Sell: {fmt(flip.sellPrice)}
                   </p>
@@ -168,9 +175,9 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
           <div className="space-y-px mt-1">
             {loading ? (
               [0, 1, 2].map(i => <SkeletonRow key={i} />)
-            ) : byPercent.length === 0 ? (
+            ) : bySpreadPct.length === 0 ? (
               <div className="p-8 text-center text-stone-600 text-xs uppercase tracking-widest">No data</div>
-            ) : byPercent.map(flip => (
+            ) : bySpreadPct.map(flip => (
               <button
                 key={flip.productId}
                 type="button"
@@ -178,7 +185,7 @@ export default function Dashboard({ onItemSelect, onUpdated }: DashboardProps) {
                 className="w-full flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-highest transition-colors"
               >
                 <p className="text-sm font-bold text-on-surface truncate max-w-[180px] text-left">
-                  {flip.productName}
+                  {flip.productName || flip.productId}
                 </p>
                 <span className="text-tertiary font-mono text-xl font-bold">
                   {flip.profitPercentage.toFixed(1)}%

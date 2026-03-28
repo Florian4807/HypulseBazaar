@@ -162,11 +162,11 @@ if (databaseProvider == "sqlite")
     }
     resolvedDbPath = sqlitePath;
 }
-logger.LogInformation("SkyBazaar startup: Worker:Enabled={WorkerEnabled}", workerEnabled);
-logger.LogInformation("SkyBazaar startup: Database:Provider={Provider}", databaseProvider);
-logger.LogInformation("SkyBazaar startup: Database connection target={DatabaseTarget}", resolvedDbPath);
+logger.LogInformation("HypulseBazaar startup: Worker:Enabled={WorkerEnabled}", workerEnabled);
+logger.LogInformation("HypulseBazaar startup: Database:Provider={Provider}", databaseProvider);
+logger.LogInformation("HypulseBazaar startup: Database connection target={DatabaseTarget}", resolvedDbPath);
 logger.LogInformation(
-    "SkyBazaar startup: ASPNETCORE_URLS={Urls}",
+    "HypulseBazaar startup: ASPNETCORE_URLS={Urls}",
     builder.Configuration["ASPNETCORE_URLS"] ?? "(not set; defaults in effect)");
 
 app.Run();
