@@ -8,12 +8,30 @@
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
-  <!-- Exclude temp-skybazaar from build -->
+  <!-- Exclude all temp-* directories from build -->
   <ItemGroup>
-    <Compile Remove="temp-skybazaar/**" />
-    <Content Remove="temp-skybazaar/**" />
-    <EmbeddedResource Remove="temp-skybazaar/**" />
-    <None Remove="temp-skybazaar/**" />
+    <Compile Remove="temp-skybazaar\**" />
+    <Content Remove="temp-skybazaar\**" />
+    <EmbeddedResource Remove="temp-skybazaar\**" />
+    <None Remove="temp-skybazaar\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="temp-skyupdater\**" />
+    <Content Remove="temp-skyupdater\**" />
+    <EmbeddedResource Remove="temp-skyupdater\**" />
+    <None Remove="temp-skyupdater\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="temp-skycore\**" />
+    <Content Remove="temp-skycore\**" />
+    <EmbeddedResource Remove="temp-skycore\**" />
+    <None Remove="temp-skycore\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="temp-hypixelskyblock\**" />
+    <Content Remove="temp-hypixelskyblock\**" />
+    <EmbeddedResource Remove="temp-hypixelskyblock\**" />
+    <None Remove="temp-hypixelskyblock\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +44,7 @@
     </PackageReference>
     <PackageReference Include="NodaTime" Version="3.1.11" />
     <PackageReference Include="Polly" Version="8.5.0" />
+    <PackageReference Include="MessagePack" Version="2.5.0" />
   </ItemGroup>
 
 </Project>

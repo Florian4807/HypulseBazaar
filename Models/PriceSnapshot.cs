@@ -1,14 +1,20 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+using MessagePack;
 
 namespace SkyBazaar.Models;
+
+// Alias to disambiguate Key attribute
+using MessagePackKey = MessagePack.KeyAttribute;
+using EFKey = System.ComponentModel.DataAnnotations.KeyAttribute;
 
 /// <summary>
 /// Represents a price snapshot at a specific point in time.
 /// </summary>
 public class PriceSnapshot
 {
-    [Key]
+    [EFKey]
     public int Id { get; set; }
 
     [Required]
@@ -63,8 +69,65 @@ public class PriceSnapshot
     public int SellOrdersCount { get; set; }
 
     /// <summary>
+    /// Serialized buy orders (top N) using MessagePack.
+    /// </summary>
+    [Column(TypeName = "blob")]
+    [JsonIgnore]
+    public byte[]? SerializedBuyOrders { get; set; }
+
+    /// <summary>
+    /// Serialized sell orders (top N) using MessagePack.
+    /// </summary>
+    [Column(TypeName = "blob")]
+    [JsonIgnore]
+    public byte[]? SerializedSellOrders { get; set; }
+
+    /// <summary>
+    /// Deserialized buy orders (top N entries).
+    /// </summary>
+    [NotMapped]
+    [JsonIgnore]
+    public IEnumerable<Order>? BuyOrders => SerializedBuyOrders == null
+        ? null
+        : MessagePackSerializer.Deserialize<IEnumerable<Order>>(SerializedBuyOrders);
+
+    /// <summary>
+    /// Deserialized sell orders (top N entries).
+    /// </summary>
+    [NotMapped]
+    [JsonIgnore]
+    public IEnumerable<Order>? SellOrders => SerializedSellOrders == null
+        ? null
+        : MessagePackSerializer.Deserialize<IEnumerable<Order>>(SerializedSellOrders);
+
+    /// <summary>
     /// Navigation property to the bazaar item.
     /// </summary>
     [ForeignKey(nameof(BazaarItemId))]
     public BazaarItem? BazaarItem { get; set; }
+}
+
+/// <summary>
+/// Represents a single order in the bazaar (buy or sell).
+/// </summary>
+[MessagePackObject]
+public class Order
+{
+    /// <summary>
+    /// Total amount of items in this order.
+    /// </summary>
+    [MessagePackKey(0)]
+    public long Amount { get; set; }
+
+    /// <summary>
+    /// Price per unit.
+    /// </summary>
+    [MessagePackKey(1)]
+    public double PricePerUnit { get; set; }
+
+    /// <summary>
+    /// Number of orders at this price point.
+    /// </summary>
+    [MessagePackKey(2)]
+    public short Orders { get; set; }
 }
