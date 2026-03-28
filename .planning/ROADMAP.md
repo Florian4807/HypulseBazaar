@@ -54,7 +54,9 @@
 5. API returns items sorted by best profit margins
 6. Top flips endpoint returns recommended items with profit potential
 
-**Plans:** TBD
+**Plans:** 2/2 plans
+- [ ] 02-01-PLAN.md — REST API endpoints for bazaar data
+- [ ] 02-02-PLAN.md — Flip detection service and endpoints
 
 ### Phase 3: Frontend
 
@@ -81,7 +83,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Setup & Core Data | 1/1 | Complete    | 2026-03-28 |
-| 2. API & Flip Analysis | 0/1 | Not started | - |
+| 2. API & Flip Analysis | 0/2 | Planned     | - |
 | 3. Frontend | 0/1 | Not started | - |
 
 ---
