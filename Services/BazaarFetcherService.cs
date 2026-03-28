@@ -22,7 +22,6 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
     private Timer? _timer;
     private bool _isFetching;
     
-    private int _fetchIntervalSeconds;
     private int _minDelayAfterSnapshotSeconds;
     private int _retentionDays;
     private int _pollWaitMs;
@@ -40,8 +39,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
         _logger = logger;
         
         // Load configuration
-        _fetchIntervalSeconds = _configuration.GetValue<int>("Bazaar:FetchIntervalSeconds", 300);
-        _minDelayAfterSnapshotSeconds = _configuration.GetValue<int>("Bazaar:MinDelayAfterSnapshotSeconds", 10);
+        _minDelayAfterSnapshotSeconds = _configuration.GetValue<int>("Bazaar:MinDelayAfterSnapshotSeconds", 9);
         _retentionDays = _configuration.GetValue<int>("Bazaar:RetentionDays", 30);
         _pollWaitMs = _configuration.GetValue<int>("Bazaar:PollWaitMs", 500);
         _maxPollRetries = _configuration.GetValue<int>("Bazaar:MaxPollRetries", 100);
@@ -164,7 +162,7 @@ public class BazaarFetcherService : IHostedService, IAsyncDisposable
                 // Create price snapshot with serialized order data
                 var priceSnapshot = new PriceSnapshot
                 {
-                    BazaarItemId = bazaarItem.Id,
+                    BazaarItem = bazaarItem,
                     Timestamp = timestamp,
                     BuyPrice = snapshot.BuyPrice,
                     SellPrice = snapshot.SellPrice,
